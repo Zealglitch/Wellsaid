@@ -193,6 +193,35 @@ export default function App() {
         Paste the message you’re dreading to send. Get three ready-to-send versions in seconds: warm, direct, and short.
       </p>
 
+      {/* Product Demo Video */}
+      <div
+        style={{
+          margin: '20px 0 26px',
+          borderRadius: '14px',
+          overflow: 'hidden',
+          border: '1px solid var(--line)',
+          background: 'var(--card)',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.07)',
+        }}
+      >
+        <video
+          controls
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+          }}
+        >
+          <source src="/assets/aistudio/WellSaid-promo-demo_cf5b1580.mp4" type="video/mp4" />
+          <source src="/wellsaid-promo-demo.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+
       <form onSubmit={handleRewrite}>
         <label htmlFor="kind">What is it?</label>
         <select
@@ -225,7 +254,7 @@ export default function App() {
         />
 
         <button className="go" id="go" type="submit" disabled={loading}>
-          {loading ? 'Rewriting...' : 'Rewrite it (free)'}
+          {loading ? 'Rewriting...' : 'Rewrite it'}
         </button>
       </form>
 
@@ -541,9 +570,9 @@ export default function App() {
             background: 'var(--accent)',
             color: 'var(--accent-ink)',
             fontWeight: 600,
-            fontSize: '0.94rem',
-            fontFamily: 'Georgia, serif',
-            letterSpacing: '0.02em',
+            fontSize: '1rem',
+            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            letterSpacing: 'normal',
             textDecoration: 'none',
             boxShadow: '0 2px 10px rgba(194,65,12,0.28)',
             cursor: 'pointer',
