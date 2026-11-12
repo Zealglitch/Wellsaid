@@ -142,33 +142,13 @@ export default function App() {
     }
   };
 
-  const [checkoutNoticeOpen, setCheckoutNoticeOpen] = useState(false);
-
-  const isCustomPaymentUrl =
-    Boolean(import.meta.env.VITE_DODO_PAYMENT_URL) ||
-    Boolean(typeof window !== 'undefined' && (window as any).DODO_CHECKOUT_URL);
-
   const dodoCheckoutUrl =
     (typeof window !== 'undefined' && (window as any).DODO_CHECKOUT_URL) ||
     import.meta.env.VITE_DODO_PAYMENT_URL ||
-    'https://checkout.dodopayments.com/buy/wellsaid';
-
-  const handleCheckoutClick = (e: React.MouseEvent) => {
-    if (!isCustomPaymentUrl) {
-      e.preventDefault();
-      setCheckoutNoticeOpen(true);
-    }
-  };
+    'https://dodo.pe/wellsaid';
 
   const handleUnlock = () => {
-    const pricingEl = document.getElementById('pricing');
-    if (pricingEl) {
-      pricingEl.scrollIntoView({ behavior: 'smooth' });
-    } else if (isCustomPaymentUrl) {
-      window.open(dodoCheckoutUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      setCheckoutNoticeOpen(true);
-    }
+    window.open(dodoCheckoutUrl, '_blank', 'noopener,noreferrer');
   };
 
   const getToneTag = (toneId: string, title?: string) => {
@@ -558,7 +538,6 @@ export default function App() {
           href={dodoCheckoutUrl}
           target="_blank"
           rel="noopener noreferrer"
-          onClick={handleCheckoutClick}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -594,57 +573,35 @@ export default function App() {
         >
           Pay once. Use forever. No subscription.
         </div>
-      </section>
 
-      {/* Graceful notice when payment gateway is awaiting URL injection */}
-      {checkoutNoticeOpen && (
         <div
           style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.45)',
-            backdropFilter: 'blur(3px)',
+            marginTop: '20px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--line)',
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px',
+            gap: '8px',
           }}
-          onClick={() => setCheckoutNoticeOpen(false)}
         >
-          <div
+          <span style={{ fontSize: '0.8rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
+            Or scan with phone to checkout ($2.99):
+          </span>
+          <img
+            src="/assets/aistudio/wellsaid-qr-code_fdb151ff.png"
+            alt="Scan to pay with Dodo Payments"
             style={{
-              background: 'var(--card)',
+              width: '104px',
+              height: '104px',
+              borderRadius: '8px',
               border: '1px solid var(--line)',
-              borderRadius: '16px',
-              padding: '28px 24px',
-              maxWidth: '420px',
-              width: '100%',
-              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.2)',
-              textAlign: 'center',
+              background: '#fff',
+              padding: '4px',
             }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 10px', fontFamily: 'Georgia, serif', fontSize: '1.3rem', color: 'var(--ink)' }}>
-              Checkout Gateway
-            </h3>
-            <p className="sub" style={{ margin: '0 0 20px', lineHeight: 1.6, fontSize: '0.92rem' }}>
-              Dodo Payments integration is active and awaiting live checkout URL. All message rewrites and companion features are currently free to preview.
-            </p>
-            <button
-              type="button"
-              onClick={() => setCheckoutNoticeOpen(false)}
-              style={{
-                padding: '10px 24px',
-                fontSize: '0.9rem',
-                borderRadius: '8px',
-              }}
-            >
-              Continue
-            </button>
-          </div>
+          />
         </div>
-      )}
+      </section>
 
       <footer
         style={{
