@@ -736,9 +736,9 @@ export default function App() {
               You have unlocked all 3 communication tones forever. Thank you for your support!
             </p>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a
-                href="/wellsaid-extension.zip"
-                download="wellsaid-extension.zip"
+              <button
+                type="button"
+                onClick={() => setAuthModalOpen(true)}
                 style={{
                   padding: '10px 20px',
                   borderRadius: '8px',
@@ -746,22 +746,7 @@ export default function App() {
                   color: 'var(--accent-ink)',
                   fontSize: '0.92rem',
                   fontWeight: 600,
-                  textDecoration: 'none',
-                }}
-              >
-                Download Extension (.zip)
-              </a>
-              <button
-                type="button"
-                onClick={() => setAuthModalOpen(true)}
-                style={{
-                  padding: '10px 18px',
-                  borderRadius: '8px',
-                  background: 'transparent',
-                  border: '1px solid var(--line)',
-                  color: 'var(--ink)',
-                  fontSize: '0.92rem',
-                  fontWeight: 600,
+                  border: 'none',
                   cursor: 'pointer',
                 }}
               >
@@ -890,76 +875,6 @@ export default function App() {
         )}
       </section>
 
-      {/* Chrome Extension Download Card */}
-      <section
-        style={{
-          marginTop: '36px',
-          background: 'var(--card)',
-          border: '1px solid var(--line)',
-          borderRadius: '16px',
-          padding: '24px 22px',
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.03)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          <img
-            src="/assets/aistudio/icon32_16886ae8.png"
-            alt="WellSaid Extension"
-            width="28"
-            height="28"
-            style={{ borderRadius: '6px' }}
-          />
-          <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '1.25rem', color: 'var(--ink)' }}>
-            WellSaid Chrome Extension
-          </h3>
-        </div>
-        <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: 'var(--mute)', lineHeight: 1.5 }}>
-          Rewrite tough messages directly inside Gmail, Slack, LinkedIn, Twitter, or any web text field.
-        </p>
-
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
-          <a
-            href="/wellsaid-extension.zip"
-            download="wellsaid-extension.zip"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '10px 18px',
-              borderRadius: '8px',
-              background: 'var(--accent)',
-              color: 'var(--accent-ink)',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              textDecoration: 'none',
-              boxShadow: '0 2px 8px rgba(194,65,12,0.2)',
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Download Updated wellsaid-extension.zip</span>
-          </a>
-          <span style={{ fontSize: '0.8rem', color: 'var(--mute)' }}>
-            Manifest V3 · Instant install
-          </span>
-        </div>
-
-        <details style={{ fontSize: '0.82rem', color: 'var(--mute)', lineHeight: 1.6 }}>
-          <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--ink)' }}>
-            How to install in Chrome in 30 seconds
-          </summary>
-          <ol style={{ paddingLeft: '20px', margin: '8px 0 0' }}>
-            <li>Download and unzip <strong>wellsaid-extension.zip</strong>.</li>
-            <li>In Chrome, open <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: '4px' }}>chrome://extensions</code>.</li>
-            <li>Enable <strong>Developer mode</strong> in the top-right corner.</li>
-            <li>Click <strong>Load unpacked</strong> and select the unzipped <code>extension</code> folder.</li>
-            <li>Click the puzzle icon to pin WellSaid. Sign Up or Sign In to sync your license!</li>
-          </ol>
-        </details>
-      </section>
 
       {/* Authentication & Account Modal */}
       {authModalOpen && (
@@ -1020,24 +935,6 @@ export default function App() {
                     {userEmail || 'Active License'}
                   </div>
                 </div>
-                <a
-                  href="/wellsaid-extension.zip"
-                  download
-                  style={{
-                    display: 'block',
-                    textAlign: 'center',
-                    padding: '11px',
-                    borderRadius: '8px',
-                    background: 'var(--accent)',
-                    color: 'var(--accent-ink)',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    fontSize: '0.9rem',
-                    marginBottom: '10px',
-                  }}
-                >
-                  Download Extension (.zip)
-                </a>
                 <button
                   type="button"
                   onClick={handleSignOut}
@@ -1294,8 +1191,6 @@ export default function App() {
           <a href="refund.html" style={{ color: 'var(--mute)' }}>Refunds</a>
           <span style={{ opacity: 0.5 }}>·</span>
           <a href="mailto:heyy.wellsaid@gmail.com" style={{ color: 'var(--mute)' }}>Contact</a>
-          <span style={{ opacity: 0.5 }}>·</span>
-          <a href="/wellsaid-extension.zip" download="wellsaid-extension.zip" style={{ color: 'var(--accent)', fontWeight: 500 }}>Extension (.zip)</a>
         </div>
       </footer>
     </main>
