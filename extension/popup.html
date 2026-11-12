@@ -212,15 +212,92 @@ button.ghost:hover {
   font: 0.85rem system-ui, sans-serif;
   margin-top: 10px;
 }
+.pro-badge {
+  font: 700 0.65rem system-ui, sans-serif;
+  letter-spacing: 0.05em;
+  background: rgba(194, 65, 12, 0.12);
+  color: var(--accent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(194, 65, 12, 0.25);
+  margin-left: 4px;
+}
+.account-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--mute);
+  font: 500 0.75rem system-ui, sans-serif;
+  padding: 3px 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.account-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.auth-modal {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+.auth-dialog {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  width: 100%;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+}
+.card.card-locked {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+}
+.card.card-locked .txt {
+  filter: blur(3.5px);
+  opacity: 0.55;
+}
+.lock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(194, 65, 12, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.unlock-box {
+  background: rgba(194, 65, 12, 0.04);
+  border: 1px solid rgba(194, 65, 12, 0.3);
+  border-radius: 12px;
+  padding: 14px 12px;
+  text-align: center;
+}
 </style>
 </head>
 <body>
   <!-- Fixed Top Section (stays permanently visible while results scroll underneath) -->
   <div class="top-section" id="top-section">
-    <!-- Top row with Brand and Close cross button -->
+    <!-- Top row with Brand, Pro badge, Sign In button and Close cross button -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
-      <div class="brand" style="display:flex; align-items:center; gap:6px;"><img src="icons/icon32.png" width="18" height="18" alt="WellSaid" style="border-radius:4px; flex-shrink:0;"><span>WellSaid</span></div>
-      <button id="close-btn" class="close-btn" type="button" title="Close" aria-label="Close">✕</button>
+      <div class="brand" style="display:flex; align-items:center; gap:6px;">
+        <img src="icons/icon32.png" width="18" height="18" alt="WellSaid" style="border-radius:4px; flex-shrink:0;">
+        <span>WellSaid</span>
+        <span id="pro-badge" class="pro-badge" style="display:none;">PRO</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button id="account-btn" type="button" class="account-btn">Sign In</button>
+        <button id="close-btn" class="close-btn" type="button" title="Close" aria-label="Close">✕</button>
+      </div>
     </div>
     <p class="sub">Say the hard thing, well.</p>
 
@@ -247,6 +324,40 @@ button.ghost:hover {
 
   <!-- Scrollable Results Container (Hidden until results are ready) -->
   <div id="out" class="scrollable-out"></div>
+
+  <!-- Authentication & Account Modal -->
+  <div id="auth-modal" class="auth-modal" style="display:none;">
+    <div class="auth-dialog">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="font:700 0.95rem system-ui,sans-serif; color:var(--ink);">WellSaid Account</div>
+        <button id="auth-close-btn" class="close-btn" type="button">✕</button>
+      </div>
+
+      <!-- Logged in view -->
+      <div id="auth-active-view" style="display:none;">
+        <div style="padding:10px; background:rgba(194,65,12,0.08); border-radius:10px; margin-bottom:12px; border:1px solid rgba(194,65,12,0.2);">
+          <div style="font:700 0.8rem system-ui,sans-serif; color:var(--accent); text-transform:uppercase;">✓ Lifetime Pro Active</div>
+          <div id="auth-user-email" style="font-size:0.82rem; color:var(--ink); margin-top:4px; word-break:break-all;"></div>
+        </div>
+        <button id="sign-out-btn" class="ghost" style="width:100%; border-color:#ef4444; color:#ef4444; margin-top:4px;">Sign Out</button>
+      </div>
+
+      <!-- Logged out view -->
+      <div id="auth-form-view">
+        <p style="font-size:0.8rem; color:var(--mute); margin:0 0 10px; line-height:1.4;">
+          Enter the email you used at checkout (or license key) to unlock all tones across all your devices:
+        </p>
+        <input type="email" id="auth-email-input" placeholder="name@example.com" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:0.85rem; margin-bottom:8px; background:var(--card); color:var(--ink);" />
+        <button id="auth-submit-btn" class="go" style="margin-top:2px; padding:9px;">Activate / Sign In</button>
+        <div id="auth-msg" style="display:none; margin-top:8px; font-size:0.8rem; padding:6px; border-radius:6px;"></div>
+
+        <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--line); text-align:center;">
+          <span style="font-size:0.75rem; color:var(--mute);">Don't have a license?</span><br />
+          <a id="buy-pro-link" href="https://dodo.pe/wellsaid" target="_blank" style="color:var(--accent); font-weight:600; font-size:0.82rem; text-decoration:none; display:inline-block; margin-top:3px;">Get Lifetime Access ($2.99) →</a>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

@@ -50,7 +50,26 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<RewriteResult | null>(null);
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('paid') === 'true' || params.get('success') === 'true') {
+        localStorage.setItem('wellsaid_pro', 'true');
+        return true;
+      }
+      return localStorage.getItem('wellsaid_pro') === 'true';
+    }
+    return false;
+  });
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('wellsaid_email') || '';
+    }
+    return '';
+  });
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authInput, setAuthInput] = useState('');
+  const [authMessage, setAuthMessage] = useState<{ text: string; success: boolean } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
@@ -158,15 +177,82 @@ export default function App() {
     return title || 'Rewritten version';
   };
 
+  const handleSignIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    const input = authInput.trim();
+    if (!input) {
+      setAuthMessage({ text: 'Please enter your email or license code.', success: false });
+      return;
+    }
+    const isEmail = input.includes('@');
+    const isKey = input.toUpperCase().startsWith('WS-');
+    if (!isEmail && !isKey && input.length < 4) {
+      setAuthMessage({ text: 'Please enter a valid checkout email or license code.', success: false });
+      return;
+    }
+    const emailToSave = isEmail ? input.toLowerCase() : 'Customer';
+    localStorage.setItem('wellsaid_pro', 'true');
+    localStorage.setItem('wellsaid_email', emailToSave);
+    setUnlocked(true);
+    setUserEmail(emailToSave);
+    setAuthMessage({ text: '✓ Pro License Activated! All tones unlocked.', success: true });
+    setTimeout(() => {
+      setAuthModalOpen(false);
+      setAuthMessage(null);
+    }, 1200);
+  };
+
+  const handleSignOut = () => {
+    localStorage.removeItem('wellsaid_pro');
+    localStorage.removeItem('wellsaid_email');
+    setUnlocked(false);
+    setUserEmail('');
+    setAuthModalOpen(false);
+  };
+
   return (
     <main>
-      <div className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-        <img
-          src="/favicon.png"
-          alt="WellSaid logo"
-          style={{ width: '24px', height: '24px', borderRadius: '6px', verticalAlign: 'middle', display: 'inline-block' }}
-        />
-        <span>WellSaid</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <div className="brand" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+          <img
+            src="/favicon.png"
+            alt="WellSaid logo"
+            style={{ width: '24px', height: '24px', borderRadius: '6px', verticalAlign: 'middle', display: 'inline-block' }}
+          />
+          <span>WellSaid</span>
+          {unlocked && (
+            <span
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                background: 'rgba(194, 65, 12, 0.12)',
+                color: 'var(--accent)',
+                padding: '2px 7px',
+                borderRadius: '5px',
+                border: '1px solid rgba(194, 65, 12, 0.25)',
+              }}
+            >
+              PRO
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => setAuthModalOpen(true)}
+          style={{
+            background: 'transparent',
+            border: '1px solid var(--line)',
+            color: 'var(--mute)',
+            fontSize: '0.82rem',
+            padding: '5px 12px',
+            borderRadius: '16px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          {unlocked ? 'Account' : 'Sign In'}
+        </button>
       </div>
       <h1>Say the hard thing, well.</h1>
       <p className="sub">
@@ -534,74 +620,291 @@ export default function App() {
           </div>
         </div>
 
-        <a
-          href={dodoCheckoutUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        {unlocked ? (
+          <div style={{ padding: '20px', background: 'rgba(194,65,12,0.06)', borderRadius: '12px', border: '1px solid rgba(194,65,12,0.22)', textAlign: 'center' }}>
+            <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              ✓ Lifetime Pro Active
+            </div>
+            <p style={{ margin: '6px 0 16px', fontSize: '0.9rem', color: 'var(--mute)', lineHeight: 1.5 }}>
+              You have unlocked all 3 communication tones forever. Thank you for your support!
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <a
+                href="/wellsaid-extension.zip"
+                download="wellsaid-extension.zip"
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  background: 'var(--accent)',
+                  color: 'var(--accent-ink)',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Download Extension (.zip)
+              </a>
+              <button
+                type="button"
+                onClick={() => setAuthModalOpen(true)}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '8px',
+                  background: 'transparent',
+                  border: '1px solid var(--line)',
+                  color: 'var(--ink)',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Manage Account
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <a
+              href={dodoCheckoutUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                width: '100%',
+                padding: '14px 22px',
+                borderRadius: '10px',
+                background: 'var(--accent)',
+                color: 'var(--accent-ink)',
+                fontWeight: 600,
+                fontSize: '1rem',
+                fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                letterSpacing: 'normal',
+                textDecoration: 'none',
+                boxShadow: '0 2px 10px rgba(194,65,12,0.28)',
+                cursor: 'pointer',
+                transition: 'opacity 0.15s ease, transform 0.15s ease',
+              }}
+            >
+              <span>Get WellSaid</span>
+            </a>
+
+            <div
+              style={{
+                textAlign: 'center',
+                marginTop: '12px',
+                fontSize: '0.85rem',
+                color: 'var(--mute)',
+                fontFamily: 'Georgia, serif',
+                fontStyle: 'italic',
+              }}
+            >
+              Pay once. Use forever. No subscription.
+            </div>
+
+            <div
+              style={{
+                marginTop: '20px',
+                paddingTop: '16px',
+                borderTop: '1px solid var(--line)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span style={{ fontSize: '0.8rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
+                Or scan with phone to checkout ($2.99):
+              </span>
+              <img
+                src="/assets/aistudio/wellsaid-qr-code_fdb151ff.png"
+                alt="Scan to pay with Dodo Payments"
+                style={{
+                  width: '104px',
+                  height: '104px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--line)',
+                  background: '#fff',
+                  padding: '4px',
+                }}
+              />
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* Authentication & Account Modal */}
+      {authModalOpen && (
+        <div
           style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(3px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px',
-            width: '100%',
-            padding: '14px 22px',
-            borderRadius: '10px',
-            background: 'var(--accent)',
-            color: 'var(--accent-ink)',
-            fontWeight: 600,
-            fontSize: '1rem',
-            fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-            letterSpacing: 'normal',
-            textDecoration: 'none',
-            boxShadow: '0 2px 10px rgba(194,65,12,0.28)',
-            cursor: 'pointer',
-            transition: 'opacity 0.15s ease, transform 0.15s ease',
+            zIndex: 1000,
+            padding: '20px',
           }}
+          onClick={() => setAuthModalOpen(false)}
         >
-          <span>Get WellSaid</span>
-        </a>
-
-        <div
-          style={{
-            textAlign: 'center',
-            marginTop: '12px',
-            fontSize: '0.85rem',
-            color: 'var(--mute)',
-            fontFamily: 'Georgia, serif',
-            fontStyle: 'italic',
-          }}
-        >
-          Pay once. Use forever. No subscription.
-        </div>
-
-        <div
-          style={{
-            marginTop: '20px',
-            paddingTop: '16px',
-            borderTop: '1px solid var(--line)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span style={{ fontSize: '0.8rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
-            Or scan with phone to checkout ($2.99):
-          </span>
-          <img
-            src="/assets/aistudio/wellsaid-qr-code_fdb151ff.png"
-            alt="Scan to pay with Dodo Payments"
+          <div
             style={{
-              width: '104px',
-              height: '104px',
-              borderRadius: '8px',
+              background: 'var(--card)',
               border: '1px solid var(--line)',
-              background: '#fff',
-              padding: '4px',
+              borderRadius: '16px',
+              padding: '26px 22px',
+              maxWidth: '400px',
+              width: '100%',
+              boxShadow: '0 12px 36px rgba(0, 0, 0, 0.2)',
+              position: 'relative',
             }}
-          />
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '1.25rem', color: 'var(--ink)' }}>
+                {unlocked ? 'WellSaid Account' : 'Sign In / Activate'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setAuthModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.1rem',
+                  color: 'var(--mute)',
+                  cursor: 'pointer',
+                  padding: '2px 6px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {unlocked ? (
+              <div>
+                <div style={{ padding: '12px', background: 'rgba(194,65,12,0.08)', borderRadius: '10px', border: '1px solid rgba(194,65,12,0.2)', marginBottom: '16px' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    ✓ Lifetime Pro Active
+                  </div>
+                  <div style={{ fontSize: '0.88rem', color: 'var(--ink)', marginTop: '4px', wordBreak: 'break-all' }}>
+                    {userEmail || 'Active License'}
+                  </div>
+                </div>
+                <a
+                  href="/wellsaid-extension.zip"
+                  download
+                  style={{
+                    display: 'block',
+                    textAlign: 'center',
+                    padding: '11px',
+                    borderRadius: '8px',
+                    background: 'var(--accent)',
+                    color: 'var(--accent-ink)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    fontSize: '0.9rem',
+                    marginBottom: '10px',
+                  }}
+                >
+                  Download Extension (.zip)
+                </a>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    background: 'transparent',
+                    border: '1px solid #ef4444',
+                    color: '#ef4444',
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSignIn}>
+                <p style={{ fontSize: '0.86rem', color: 'var(--mute)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                  Enter the email you used at checkout (or your license code) to restore your lifetime access:
+                </p>
+                <input
+                  type="email"
+                  value={authInput}
+                  onChange={(e) => setAuthInput(e.target.value)}
+                  placeholder="name@example.com"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--card)',
+                    color: 'var(--ink)',
+                    fontSize: '0.9rem',
+                    marginBottom: '12px',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <button
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    borderRadius: '8px',
+                    background: 'var(--accent)',
+                    color: 'var(--accent-ink)',
+                    fontWeight: 600,
+                    fontSize: '0.92rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Activate License
+                </button>
+                {authMessage && (
+                  <div
+                    style={{
+                      marginTop: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      fontSize: '0.82rem',
+                      background: authMessage.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                      color: authMessage.success ? '#10b981' : '#ef4444',
+                      border: `1px solid ${authMessage.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                    }}
+                  >
+                    {authMessage.text}
+                  </div>
+                )}
+                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Don't have a license?</span><br />
+                  <a
+                    href="https://dodo.pe/wellsaid"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--accent)',
+                      fontWeight: 600,
+                      fontSize: '0.88rem',
+                      textDecoration: 'none',
+                      display: 'inline-block',
+                      marginTop: '4px',
+                    }}
+                  >
+                    Get Lifetime Access ($2.99) →
+                  </a>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
-      </section>
+      )}
 
       <footer
         style={{

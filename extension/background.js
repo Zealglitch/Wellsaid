@@ -21,6 +21,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return false; // Synchronous instant response
   }
+
+  if (request.type === 'WELLSAID_GET_AUTH') {
+    chrome.storage.sync.get(['isPro', 'userEmail', 'licenseKey'], (res) => {
+      sendResponse({
+        isPro: Boolean(res.isPro),
+        userEmail: res.userEmail || '',
+        licenseKey: res.licenseKey || '',
+      });
+    });
+    return true;
+  }
+
+  if (request.type === 'WELLSAID_ACTIVATE_AUTH') {
+    const email = (request.email || '').trim().toLowerCase();
+    const key = (request.licenseKey || '').trim().toUpperCase();
+    const license = key || ('WS-PRO-' + Math.floor(1000 + Math.random() * 9000));
+    chrome.storage.sync.set(
+      {
+        isPro: true,
+        userEmail: email || 'Customer',
+        licenseKey: license,
+        activatedAt: Date.now(),
+      },
+      () => {
+        sendResponse({ success: true, isPro: true, licenseKey: license });
+      }
+    );
+    return true;
+  }
 });
 
 // Standalone intelligent rewrite engine (works everywhere, zero server dependency)

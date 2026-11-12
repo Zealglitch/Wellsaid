@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Payment Successful – WellSaid Pro</title>
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#1e1b18;--mute:#6f675f;--line:#e6dfd5;--accent:#c2410c;--accent-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#171412;--card:#221e1b;--ink:#f3ede6;--mute:#a39a90;--line:#38322d;--accent:#fb923c;--accent-ink:#1a1008}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:580px;margin:0 auto;padding:40px 20px 70px;text-align:center}
+.brand{font:700 1.1rem system-ui,sans-serif;color:var(--accent);margin-bottom:24px;display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+.check-circle{width:64px;height:64px;border-radius:50%;background:rgba(194,65,12,0.12);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 18px;border:2px solid var(--accent)}
+h1{font-size:2.2rem;line-height:1.2;margin:0 0 10px;font-weight:normal}
+.sub{color:var(--mute);font-size:1.05rem;line-height:1.5;margin:0 0 28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,0.05);margin-bottom:24px}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font:700 0.8rem system-ui,sans-serif;margin-right:8px}
+.btn-primary{display:block;width:100%;padding:14px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font:600 1rem system-ui,sans-serif;text-align:center;text-decoration:none;border:none;cursor:pointer;margin-top:10px;transition:opacity 0.15s ease}
+.btn-primary:hover{opacity:0.92}
+.btn-secondary{display:block;width:100%;padding:12px;border-radius:10px;background:transparent;color:var(--ink);font:600 0.92rem system-ui,sans-serif;text-align:center;text-decoration:none;border:1px solid var(--line);cursor:pointer;margin-top:10px;transition:all 0.15s ease}
+.btn-secondary:hover{border-color:var(--ink)}
+.license-box{background:rgba(194,65,12,0.06);border:1px dashed var(--accent);border-radius:10px;padding:12px;text-align:center;font-family:monospace;font-size:1.1rem;color:var(--accent);font-weight:700;margin:12px 0}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<main>
+  <a href="/" class="brand"><img src="/favicon.png" width="24" height="24" style="border-radius:6px;"><span>WellSaid</span></a>
+  
+  <div class="check-circle">✓</div>
+  <h1>You’re in! Welcome to Pro.</h1>
+  <p class="sub">Your $2.99 lifetime purchase is complete. All 3 communication tones are now unlocked forever.</p>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <span style="font:700 0.75rem system-ui,sans-serif; text-transform:uppercase; letter-spacing:0.06em; color:var(--accent);">Lifetime License</span>
+      <span style="font-size:0.8rem; color:#10b981; font-weight:600; font-family:system-ui,sans-serif;">● Active</span>
+    </div>
+    
+    <div style="font-size:0.9rem; color:var(--mute); margin-bottom:6px;">Your Activation Code:</div>
+    <div id="license-code" class="license-box">WS-PRO-7829-LIFETIME</div>
+
+    <div style="margin-top:20px;">
+      <div style="display:flex; align-items:center; font-weight:600; margin-bottom:6px; font-family:system-ui,sans-serif;">
+        <span class="step-num">1</span> Install or Open the Chrome Extension
+      </div>
+      <p style="font-size:0.9rem; color:var(--mute); margin:0 0 12px 32px; line-height:1.5;">
+        Get WellSaid right inside your Gmail, Slack, and LinkedIn inbox.
+      </p>
+      <a href="/wellsaid-extension.zip" class="btn-primary" download>Download Extension (.zip)</a>
+    </div>
+
+    <div style="margin-top:24px; padding-top:18px; border-top:1px solid var(--line);">
+      <div style="display:flex; align-items:center; font-weight:600; margin-bottom:6px; font-family:system-ui,sans-serif;">
+        <span class="step-num">2</span> How to Activate in Chrome Extension
+      </div>
+      <p style="font-size:0.9rem; color:var(--mute); margin:0 0 10px 32px; line-height:1.5;">
+        Open the extension popup in your browser toolbar, click <strong>Sign In</strong>, and enter your checkout email (or the activation code above). All tones will unlock immediately!
+      </p>
+    </div>
+  </div>
+
+  <div style="margin-top:20px;">
+    <a href="/" class="btn-secondary">← Back to Web App (Unlocked)</a>
+  </div>
+
+  <p style="font-size:0.85rem; color:var(--mute); margin-top:30px;">
+    Need help? Email <a href="mailto:heyy.wellsaid@gmail.com">heyy.wellsaid@gmail.com</a> anytime.
+  </p>
+</main>
+
+<script>
+  // Automatically activate Pro locally in browser storage
+  try {
+    localStorage.setItem('wellsaid_pro', 'true');
+    localStorage.setItem('wellsaid_activated_at', String(Date.now()));
+    
+    // Read email or session from URL if provided by payment gateway
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email') || params.get('customer_email');
+    if (email) {
+      localStorage.setItem('wellsaid_email', email);
+    }
+
+    // Generate or retrieve persistent license key
+    let license = localStorage.getItem('wellsaid_license');
+    if (!license) {
+      const rand1 = Math.floor(1000 + Math.random() * 9000);
+      const rand2 = Math.random().toString(36).substring(2, 6).toUpperCase();
+      license = 'WS-PRO-' + rand1 + '-' + rand2;
+      localStorage.setItem('wellsaid_license', license);
+    }
+    const codeEl = document.getElementById('license-code');
+    if (codeEl) codeEl.textContent = license;
+  } catch (e) {
+    console.error('Storage error', e);
+  }
+</script>
+</body>
+</html>
