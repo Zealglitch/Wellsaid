@@ -659,6 +659,8 @@ export default function App() {
           <a href="refund.html" style={{ color: 'var(--mute)' }}>Refunds</a>
           <span style={{ opacity: 0.5 }}>·</span>
           <a href="mailto:heyy.wellsaid@gmail.com" style={{ color: 'var(--mute)' }}>Contact</a>
+          <span style={{ opacity: 0.5 }}>·</span>
+          <a href="/wellsaid-extension.zip" download="wellsaid-extension.zip" style={{ color: 'var(--accent)', fontWeight: 500 }}>Extension (.zip)</a>
         </div>
       </footer>
     </main>
