@@ -1,0 +1,35 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="tPenBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c2410c"/>
+      <stop offset="100%" stop-color="#9a3412"/>
+    </linearGradient>
+    <linearGradient id="tGoldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Writing Hand with Pen Emblem (✍️) for transparent backgrounds -->
+  <g transform="translate(256, 256) rotate(-10) translate(-256, -256)">
+    <!-- Pen Barrel -->
+    <path d="M194 320 L336 178 L368 210 L226 352 Z" fill="url(#tPenBody)"/>
+    <!-- Pen Ring -->
+    <path d="M308 206 L338 176 L350 188 L320 218 Z" fill="url(#tGoldAccent)"/>
+    <!-- Pen Nib Base & Point -->
+    <path d="M194 320 L156 358 L146 368 L156 378 L166 368 L204 330 Z" fill="url(#tGoldAccent)"/>
+    <path d="M156 358 L138 382 L146 368 Z" fill="#1e1b18"/>
+    <!-- Ink line flourish -->
+    <path d="M120 398 Q146 388 174 390 Q210 394 246 386" fill="none" stroke="#c2410c" stroke-width="12" stroke-linecap="round"/>
+
+    <!-- Hand Palm -->
+    <path d="M228 350 C244 366 284 390 324 390 C364 390 400 354 400 310 C400 278 368 250 336 250 L264 322 Z" fill="#1e1b18" opacity="0.95"/>
+    <!-- Thumb holding pen grip -->
+    <path d="M214 322 C204 308 210 284 230 274 C250 264 276 274 288 294 L252 334 Z" fill="#1e1b18"/>
+    <!-- Index Finger guiding pen -->
+    <path d="M260 242 C276 226 304 228 320 244 C334 258 334 282 318 298 L264 322 Z" fill="#2d2824"/>
+    <!-- Detail -->
+    <path d="M284 266 C290 272 298 280 302 288" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WellSaid – say the hard thing, well</title>
+<meta name="description" content="Paste the message you’re dreading to send. Get three ready-to-send versions in 10 seconds.">
+<meta property="og:title" content="WellSaid – say the hard thing, well">
+<meta property="og:description" content="Paste the message you’re dreading. Get three ready-to-send versions in seconds.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
+<style>
+:root{--bg:#faf7f2;--card:#fff;--ink:#1e1b18;--mute:#6f675f;--line:#e6dfd5;--accent:#c2410c;--accent-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#171412;--card:#221e1b;--ink:#f3ede6;--mute:#a39a90;--line:#38322d;--accent:#fb923c;--accent-ink:#1a1008}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:620px;margin:0 auto;padding:32px 18px 60px}
+.brand{font:700 1.05rem system-ui,sans-serif;color:var(--accent);margin-bottom:18px}
+h1{font-size:2.1rem;line-height:1.15;margin:0 0 8px}
+h2{font-size:1.2rem;margin:36px 0 8px}
+.sub,.small{color:var(--mute);font:.95rem system-ui,sans-serif}
+label{display:block;font:600 .8rem system-ui,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin:16px 0 6px}
+select,textarea{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+textarea{min-height:130px;resize:vertical}
+button{font:600 1rem system-ui,sans-serif;border:0;border-radius:10px;padding:13px 20px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+button.ghost{background:transparent;color:var(--mute);border:1px solid var(--line);padding:8px 14px;font-size:.85rem;margin-top:10px}
+.go{width:100%;margin-top:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-top:14px;position:relative}
+.tag{font:700 .72rem system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-bottom:6px}
+.txt{white-space:pre-wrap}
+.locked .txt{filter:blur(7px);user-select:none}
+.lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+.paywall{margin-top:18px;text-align:center;border:2px dashed var(--accent);border-radius:14px;padding:20px;background:var(--card)}
+.paywall h3{margin:0 0 4px;font-size:1.2rem}
+.paywall p{margin:0 0 14px}
+.err{color:#b91c1c;font:.9rem system-ui,sans-serif;margin-top:12px}
+ol,dl{padding-left:20px;font-family:system-ui,sans-serif;font-size:.95rem}
+dt{font-weight:700;margin-top:12px}dd{margin:2px 0 0;color:var(--mute)}
+</style>
+</head>
+<body>
+<main>
+  <div class="brand">✍️ WellSaid</div>
+  <h1>Say the hard thing, well.</h1>
+  <p class="sub">Paste the message you’re dreading to send. Get three ready-to-send versions in seconds: warm, direct, and short.</p>
+
+  <label for="kind">What is it?</label>
+  <select id="kind">
+    <option>An apology</option><option>Asking for a raise</option><option>Declining an invite</option>
+    <option>Ending a relationship</option><option>Setting a boundary</option><option>Giving tough feedback</option><option>Something else</option>
+  </select>
+  <label for="msg">Your message, as it is in your head</label>
+  <textarea id="msg" maxlength="2000" placeholder="e.g. I can’t come to your wedding because I can’t afford the flight, and I feel awful about it."></textarea>
+  <button class="go" id="go">Rewrite it (free)</button>
+  <div id="err" class="err" hidden></div>
+  <div id="out"></div>
+
+  <h2>How it works</h2>
+  <ol>
+    <li>Paste what you want to say, however messy.</li>
+    <li>Get your first rewrite free, right away.</li>
+    <li>Want the other two tones? Unlock them for <span class="price"></span>, once. No account, no subscription.</li>
+  </ol>
+
+  <h2>Questions</h2>
+  <dl>
+    <dt>Do you save my message?</dt>
+    <dd>Your original message is never stored. It is sent to an AI service only to write the rewrites. We keep the rewrites so your unlock link keeps working.</dd>
+    <dt>What do I get for <span class="price"></span>?</dt>
+    <dd>The two remaining versions of your message (direct and professional, short and firm), plus copy buttons.</dd>
+    <dt>What if it isn’t right for me?</dt>
+    <dd>Email <a href="mailto:heyy.wellsaid@gmail.com">heyy.wellsaid@gmail.com</a> within 7 days and we’ll refund you.</dd>
+    <dt>How do I pay?</dt>
+    <dd>Cards, UPI (in India), and other local methods through Dodo Payments, which handles tax and receipts.</dd>
+  </dl>
+  <p class="small">WellSaid helps you word things. It isn’t legal, medical, or professional advice. Check every message before you send it.</p>
+<p class="small"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="refund.html">Refunds</a> · <a href="mailto:heyy.wellsaid@gmail.com">Contact</a></p>
+</main>
+
+<script src="app.js" defer></script>
+</body>
+</html>

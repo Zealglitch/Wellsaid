@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WellSaid – Live Workflow Demo Video</title>
+<style>
+:root {
+  --bg: #161412;
+  --card: #201c18;
+  --line: #38322c;
+  --ink: #faf7f2;
+  --mute: #a8a29e;
+  --accent: #ea580c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+.container {
+  max-width: 900px;
+  width: 100%;
+  text-align: center;
+}
+.brand {
+  font-family: Georgia, serif;
+  font-size: 2.4rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.brand span {
+  color: var(--accent);
+}
+.sub {
+  color: var(--mute);
+  font-size: 1.05rem;
+  margin-bottom: 24px;
+}
+.video-wrapper {
+  background: #000;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  position: relative;
+}
+video {
+  width: 100%;
+  height: auto;
+  display: block;
+  aspect-ratio: 16/9;
+}
+.controls {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.btn {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 12px 24px;
+  border-radius: 10px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+  transition: opacity 0.15s ease;
+}
+.btn:hover {
+  opacity: 0.9;
+}
+.btn-secondary {
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  box-shadow: none;
+}
+.steps {
+  margin-top: 36px;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 24px;
+}
+.steps h3 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+  color: #fff;
+}
+.steps ol {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--mute);
+  line-height: 1.7;
+}
+.steps li strong {
+  color: var(--ink);
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="brand"><img src="/favicon.png" width="36" height="36" style="border-radius:8px; vertical-align:middle;"> <span>WellSaid</span></div>
+  <div class="sub">Live Demo: Full Chrome Extension Workflow</div>
+
+  <div class="video-wrapper">
+    <video controls autoplay loop playsinline poster="/webstore/large_promo_920x680.png">
+      <source src="/wellsaid-promo-video.mp4" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </div>
+
+  <div class="controls">
+    <a href="/wellsaid-promo-video.mp4" download="wellsaid-promo-video.mp4" class="btn">
+      ⬇️ Download Promo Video (.mp4)
+    </a>
+    <a href="/" class="btn btn-secondary">
+      ← Back to WellSaid Website
+    </a>
+  </div>
+
+  <div class="steps">
+    <h3>Video Breakdown (Shown in Live Demo):</h3>
+    <ol>
+      <li><strong>0:00 - Launch:</strong> User clicks the <strong>WellSaid</strong> toolbar icon in the top-right corner of Google Chrome.</li>
+      <li><strong>0:03 - Instant Popup:</strong> The dark-mode popup appears with scenario selection ("An apology").</li>
+      <li><strong>0:05 - Raw Draft Input:</strong> User types out a raw, stressful apology they dread sending.</li>
+      <li><strong>0:11 - Rewrite it:</strong> User clicks the terracotta <strong>Rewrite it</strong> button.</li>
+      <li><strong>0:12 - 3 Ready Tones:</strong> Instantly displays <strong>Warm &amp; gentle</strong>, <strong>Direct &amp; professional</strong>, and <strong>Short &amp; firm</strong> with 0ms buffering.</li>
+      <li><strong>0:15 - 1-Click Copy:</strong> User clicks the arrow to copy the Warm tone directly into their active email compose box.</li>
+    </ol>
+  </div>
+</div>
+</body>
+</html>

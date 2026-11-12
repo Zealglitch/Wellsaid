@@ -1,0 +1,8 @@
+{
+  "name": "WellSaid",
+  "description": "Say the hard thing, well. Rewrite awkward, difficult, or dread-inducing messages into three ready-to-send tones: Warm & gentle, Direct & professional, and Short & firm.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
