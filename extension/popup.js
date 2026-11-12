@@ -10,19 +10,82 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Auth UI elements
   const proBadge = document.getElementById('pro-badge');
+  const signupBtn = document.getElementById('signup-btn');
   const accountBtn = document.getElementById('account-btn');
   const authModal = document.getElementById('auth-modal');
   const authCloseBtn = document.getElementById('auth-close-btn');
+  const authModalTitle = document.getElementById('auth-modal-title');
   const authActiveView = document.getElementById('auth-active-view');
-  const authFormView = document.getElementById('auth-form-view');
+  const authLoggedOutContainer = document.getElementById('auth-logged-out-container');
+  const authActiveStatus = document.getElementById('auth-active-status');
   const authUserEmail = document.getElementById('auth-user-email');
+  
+  // Tab elements
+  const tabSignupBtn = document.getElementById('tab-signup-btn');
+  const tabSigninBtn = document.getElementById('tab-signin-btn');
+  const authSignupView = document.getElementById('auth-signup-view');
+  const authSigninView = document.getElementById('auth-signin-view');
+  const signupEmailInput = document.getElementById('signup-email-input');
+  const signupSubmitBtn = document.getElementById('signup-submit-btn');
   const authEmailInput = document.getElementById('auth-email-input');
   const authSubmitBtn = document.getElementById('auth-submit-btn');
+  const gotoSigninLink = document.getElementById('goto-signin-link');
+  const gotoSignupLink = document.getElementById('goto-signup-link');
   const authMsg = document.getElementById('auth-msg');
   const signOutBtn = document.getElementById('sign-out-btn');
 
   let isPro = false;
   let currentUserEmail = '';
+
+  function switchTab(mode) {
+    if (authMsg) authMsg.style.display = 'none';
+    if (mode === 'signup') {
+      if (tabSignupBtn) {
+        tabSignupBtn.style.background = 'var(--card)';
+        tabSignupBtn.style.color = 'var(--ink)';
+        tabSignupBtn.style.fontWeight = '700';
+      }
+      if (tabSigninBtn) {
+        tabSigninBtn.style.background = 'transparent';
+        tabSigninBtn.style.color = 'var(--mute)';
+        tabSigninBtn.style.fontWeight = '500';
+      }
+      if (authSignupView) authSignupView.style.display = 'block';
+      if (authSigninView) authSigninView.style.display = 'none';
+      if (authModalTitle) authModalTitle.textContent = 'Create Free Account';
+      if (signupEmailInput) setTimeout(() => signupEmailInput.focus(), 50);
+    } else {
+      if (tabSigninBtn) {
+        tabSigninBtn.style.background = 'var(--card)';
+        tabSigninBtn.style.color = 'var(--ink)';
+        tabSigninBtn.style.fontWeight = '700';
+      }
+      if (tabSignupBtn) {
+        tabSignupBtn.style.background = 'transparent';
+        tabSignupBtn.style.color = 'var(--mute)';
+        tabSignupBtn.style.fontWeight = '500';
+      }
+      if (authSigninView) authSigninView.style.display = 'block';
+      if (authSignupView) authSignupView.style.display = 'none';
+      if (authModalTitle) authModalTitle.textContent = 'Sign In';
+      if (authEmailInput) setTimeout(() => authEmailInput.focus(), 50);
+    }
+  }
+
+  if (tabSignupBtn) tabSignupBtn.addEventListener('click', () => switchTab('signup'));
+  if (tabSigninBtn) tabSigninBtn.addEventListener('click', () => switchTab('signin'));
+  if (gotoSigninLink) {
+    gotoSigninLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchTab('signin');
+    });
+  }
+  if (gotoSignupLink) {
+    gotoSignupLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      switchTab('signup');
+    });
+  }
 
   // 1. Check Authentication status on load
   function refreshAuth(callback) {
@@ -32,15 +95,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (isPro) {
         if (proBadge) proBadge.style.display = 'inline-block';
+        if (signupBtn) signupBtn.style.display = 'none';
         if (accountBtn) accountBtn.textContent = 'Account';
         if (authActiveView) authActiveView.style.display = 'block';
-        if (authFormView) authFormView.style.display = 'none';
+        if (authLoggedOutContainer) authLoggedOutContainer.style.display = 'none';
+        if (authActiveStatus) authActiveStatus.textContent = '✓ Lifetime Pro Active';
         if (authUserEmail) authUserEmail.textContent = currentUserEmail || 'Active Lifetime License';
+        if (authModalTitle) authModalTitle.textContent = 'WellSaid Pro Account';
+      } else if (currentUserEmail) {
+        if (proBadge) proBadge.style.display = 'none';
+        if (signupBtn) signupBtn.style.display = 'none';
+        if (accountBtn) accountBtn.textContent = 'Account';
+        if (authActiveView) authActiveView.style.display = 'block';
+        if (authLoggedOutContainer) authLoggedOutContainer.style.display = 'none';
+        if (authActiveStatus) authActiveStatus.textContent = 'Free Account Active';
+        if (authUserEmail) authUserEmail.textContent = currentUserEmail;
+        if (authModalTitle) authModalTitle.textContent = 'WellSaid Account';
       } else {
         if (proBadge) proBadge.style.display = 'none';
+        if (signupBtn) signupBtn.style.display = 'inline-block';
         if (accountBtn) accountBtn.textContent = 'Sign In';
         if (authActiveView) authActiveView.style.display = 'none';
-        if (authFormView) authFormView.style.display = 'block';
+        if (authLoggedOutContainer) authLoggedOutContainer.style.display = 'block';
+        if (authModalTitle) authModalTitle.textContent = 'WellSaid Account';
       }
 
       if (callback) callback();
@@ -50,9 +127,21 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshAuth();
 
   // 2. Open / Close Auth Modal
+  if (signupBtn) {
+    signupBtn.addEventListener('click', () => {
+      refreshAuth(() => {
+        switchTab('signup');
+        if (authModal) authModal.style.display = 'flex';
+      });
+    });
+  }
+
   if (accountBtn) {
     accountBtn.addEventListener('click', () => {
       refreshAuth(() => {
+        if (!isPro && !currentUserEmail) {
+          switchTab('signin');
+        }
         if (authModal) authModal.style.display = 'flex';
       });
     });
@@ -65,7 +154,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. Handle Sign In / License Activation
+  // 3. Handle Sign Up (Free Account)
+  if (signupSubmitBtn) {
+    signupSubmitBtn.addEventListener('click', () => {
+      const email = (signupEmailInput.value || '').trim();
+      if (!email || !email.includes('@')) {
+        showAuthMsg('Please enter a valid email address.', false);
+        return;
+      }
+
+      chrome.storage.sync.set(
+        {
+          userEmail: email.toLowerCase(),
+          hasAccount: true,
+          signedUpAt: Date.now(),
+        },
+        () => {
+          showAuthMsg('✓ Free Account created! Welcome to WellSaid.', true);
+          setTimeout(() => {
+            if (authModal) authModal.style.display = 'none';
+            refreshAuth();
+          }, 1200);
+        }
+      );
+    });
+  }
+
+  // 4. Handle Sign In / License Activation
   if (authSubmitBtn) {
     authSubmitBtn.addEventListener('click', () => {
       const input = (authEmailInput.value || '').trim();
@@ -110,10 +225,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 4. Handle Sign Out
+  // 5. Handle Sign Out
   if (signOutBtn) {
     signOutBtn.addEventListener('click', () => {
-      chrome.storage.sync.remove(['isPro', 'userEmail', 'licenseKey', 'activatedAt'], () => {
+      chrome.storage.sync.remove(['isPro', 'userEmail', 'licenseKey', 'activatedAt', 'hasAccount'], () => {
         refreshAuth(() => {
           if (authModal) authModal.style.display = 'none';
           chrome.storage.local.get(['savedVersions'], (r) => {
@@ -331,8 +446,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <button id="in-popup-unlock-btn" class="go" style="margin-top:0; padding:10px; font-size:0.9rem;">
           Unlock for $2.99
         </button>
-        <div style="margin-top:8px;">
-          <a href="#" id="in-popup-restore-btn" style="color:var(--mute); font-size:0.75rem; text-decoration:underline;">Already purchased? Sign In / Activate</a>
+        <div style="margin-top:8px; display:flex; justify-content:center; gap:8px; font-size:0.75rem;">
+          <a href="#" id="in-popup-signup-btn" style="color:var(--accent); font-weight:600; text-decoration:underline;">Sign Up Free</a>
+          <span style="color:var(--mute);">·</span>
+          <a href="#" id="in-popup-restore-btn" style="color:var(--mute); text-decoration:underline;">Sign In / Activate</a>
         </div>
       `;
 
@@ -342,9 +459,19 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.tabs.create({ url: 'https://dodo.pe/wellsaid' });
       });
 
+      const inPopupSignupBtn = unlockBox.querySelector('#in-popup-signup-btn');
+      if (inPopupSignupBtn) {
+        inPopupSignupBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          switchTab('signup');
+          if (authModal) authModal.style.display = 'flex';
+        });
+      }
+
       const restoreBtn = unlockBox.querySelector('#in-popup-restore-btn');
       restoreBtn.addEventListener('click', (e) => {
         e.preventDefault();
+        switchTab('signin');
         if (authModal) authModal.style.display = 'flex';
       });
 

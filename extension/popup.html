@@ -287,14 +287,15 @@ button.ghost:hover {
 <body>
   <!-- Fixed Top Section (stays permanently visible while results scroll underneath) -->
   <div class="top-section" id="top-section">
-    <!-- Top row with Brand, Pro badge, Sign In button and Close cross button -->
+    <!-- Top row with Brand, Pro badge, Sign Up / Sign In buttons and Close cross button -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
       <div class="brand" style="display:flex; align-items:center; gap:6px;">
         <img src="icons/icon32.png" width="18" height="18" alt="WellSaid" style="border-radius:4px; flex-shrink:0;">
         <span>WellSaid</span>
         <span id="pro-badge" class="pro-badge" style="display:none;">PRO</span>
       </div>
-      <div style="display:flex; align-items:center; gap:6px;">
+      <div style="display:flex; align-items:center; gap:5px;">
+        <button id="signup-btn" type="button" class="account-btn" style="background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600;">Sign Up</button>
         <button id="account-btn" type="button" class="account-btn">Sign In</button>
         <button id="close-btn" class="close-btn" type="button" title="Close" aria-label="Close">✕</button>
       </div>
@@ -329,31 +330,56 @@ button.ghost:hover {
   <div id="auth-modal" class="auth-modal" style="display:none;">
     <div class="auth-dialog">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div style="font:700 0.95rem system-ui,sans-serif; color:var(--ink);">WellSaid Account</div>
+        <div id="auth-modal-title" style="font:700 0.95rem system-ui,sans-serif; color:var(--ink);">WellSaid Account</div>
         <button id="auth-close-btn" class="close-btn" type="button">✕</button>
       </div>
 
       <!-- Logged in view -->
       <div id="auth-active-view" style="display:none;">
         <div style="padding:10px; background:rgba(194,65,12,0.08); border-radius:10px; margin-bottom:12px; border:1px solid rgba(194,65,12,0.2);">
-          <div style="font:700 0.8rem system-ui,sans-serif; color:var(--accent); text-transform:uppercase;">✓ Lifetime Pro Active</div>
+          <div id="auth-active-status" style="font:700 0.8rem system-ui,sans-serif; color:var(--accent); text-transform:uppercase;">✓ Lifetime Pro Active</div>
           <div id="auth-user-email" style="font-size:0.82rem; color:var(--ink); margin-top:4px; word-break:break-all;"></div>
         </div>
         <button id="sign-out-btn" class="ghost" style="width:100%; border-color:#ef4444; color:#ef4444; margin-top:4px;">Sign Out</button>
       </div>
 
-      <!-- Logged out view -->
-      <div id="auth-form-view">
-        <p style="font-size:0.8rem; color:var(--mute); margin:0 0 10px; line-height:1.4;">
-          Enter the email you used at checkout (or license key) to unlock all tones across all your devices:
-        </p>
-        <input type="email" id="auth-email-input" placeholder="name@example.com" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:0.85rem; margin-bottom:8px; background:var(--card); color:var(--ink);" />
-        <button id="auth-submit-btn" class="go" style="margin-top:2px; padding:9px;">Activate / Sign In</button>
-        <div id="auth-msg" style="display:none; margin-top:8px; font-size:0.8rem; padding:6px; border-radius:6px;"></div>
+      <!-- Logged out views container -->
+      <div id="auth-logged-out-container">
+        <!-- Tabs for Sign Up vs Sign In -->
+        <div id="auth-tabs" style="display:flex; gap:4px; margin-bottom:12px; background:var(--bg); padding:3px; border-radius:8px; border:1px solid var(--line);">
+          <button id="tab-signup-btn" type="button" style="flex:1; padding:6px 0; border:none; border-radius:6px; font:700 0.78rem system-ui,sans-serif; cursor:pointer; background:var(--card); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.08);">Sign Up</button>
+          <button id="tab-signin-btn" type="button" style="flex:1; padding:6px 0; border:none; border-radius:6px; font:500 0.78rem system-ui,sans-serif; cursor:pointer; background:transparent; color:var(--mute);">Sign In</button>
+        </div>
+
+        <!-- 1. Sign Up View -->
+        <div id="auth-signup-view">
+          <p style="font-size:0.78rem; color:var(--mute); margin:0 0 10px; line-height:1.4;">
+            Create your free WellSaid account to save drafts and get free rewrites:
+          </p>
+          <input type="email" id="signup-email-input" placeholder="name@example.com" style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:0.85rem; margin-bottom:8px; background:var(--card); color:var(--ink);" />
+          <button id="signup-submit-btn" class="go" style="margin-top:2px; padding:9px;">Create Free Account</button>
+          <div style="margin-top:10px; text-align:center;">
+            <a href="#" id="goto-signin-link" style="color:var(--mute); font-size:0.75rem; text-decoration:underline;">Already have an account or license? Sign In →</a>
+          </div>
+        </div>
+
+        <!-- 2. Sign In View -->
+        <div id="auth-signin-view" style="display:none;">
+          <p style="font-size:0.78rem; color:var(--mute); margin:0 0 10px; line-height:1.4;">
+            Enter the email you used at checkout (or license key) to sign in:
+          </p>
+          <input type="email" id="auth-email-input" placeholder="name@example.com or WS-PRO-..." style="width:100%; padding:8px 10px; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:0.85rem; margin-bottom:8px; background:var(--card); color:var(--ink);" />
+          <button id="auth-submit-btn" class="go" style="margin-top:2px; padding:9px;">Sign In / Activate</button>
+          <div style="margin-top:10px; text-align:center;">
+            <a href="#" id="goto-signup-link" style="color:var(--mute); font-size:0.75rem; text-decoration:underline;">Need an account? Sign Up for free →</a>
+          </div>
+        </div>
+
+        <div id="auth-msg" style="display:none; margin-top:8px; font-size:0.8rem; padding:6px; border-radius:6px; text-align:center;"></div>
 
         <div style="margin-top:12px; padding-top:10px; border-top:1px solid var(--line); text-align:center;">
-          <span style="font-size:0.75rem; color:var(--mute);">Don't have a license?</span><br />
-          <a id="buy-pro-link" href="https://dodo.pe/wellsaid" target="_blank" style="color:var(--accent); font-weight:600; font-size:0.82rem; text-decoration:none; display:inline-block; margin-top:3px;">Get Lifetime Access ($2.99) →</a>
+          <span style="font-size:0.75rem; color:var(--mute);">Want all 3 tones forever?</span><br />
+          <a id="buy-pro-link" href="https://dodo.pe/wellsaid" target="_blank" style="color:var(--accent); font-weight:600; font-size:0.82rem; text-decoration:none; display:inline-block; margin-top:3px;">Get Lifetime Pro ($2.99) →</a>
         </div>
       </div>
     </div>

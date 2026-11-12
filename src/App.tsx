@@ -68,6 +68,7 @@ export default function App() {
     return '';
   });
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'account'>('signup');
   const [authInput, setAuthInput] = useState('');
   const [authMessage, setAuthMessage] = useState<{ text: string; success: boolean } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -177,6 +178,23 @@ export default function App() {
     return title || 'Rewritten version';
   };
 
+  const handleSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    const input = authInput.trim();
+    if (!input || !input.includes('@')) {
+      setAuthMessage({ text: 'Please enter a valid email address.', success: false });
+      return;
+    }
+    const emailToSave = input.toLowerCase();
+    localStorage.setItem('wellsaid_email', emailToSave);
+    setUserEmail(emailToSave);
+    setAuthMessage({ text: '✓ Account created successfully! Welcome to WellSaid.', success: true });
+    setTimeout(() => {
+      setAuthModalOpen(false);
+      setAuthMessage(null);
+    }, 1200);
+  };
+
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     const input = authInput.trim();
@@ -237,22 +255,73 @@ export default function App() {
             </span>
           )}
         </div>
-        <button
-          type="button"
-          onClick={() => setAuthModalOpen(true)}
-          style={{
-            background: 'transparent',
-            border: '1px solid var(--line)',
-            color: 'var(--mute)',
-            fontSize: '0.82rem',
-            padding: '5px 12px',
-            borderRadius: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          {unlocked ? 'Account' : 'Sign In'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {unlocked || userEmail ? (
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('account');
+                setAuthModalOpen(true);
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--line)',
+                color: 'var(--mute)',
+                fontSize: '0.82rem',
+                padding: '5px 12px',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              Account
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setAuthMessage(null);
+                  setAuthModalOpen(true);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--line)',
+                  color: 'var(--mute)',
+                  fontSize: '0.82rem',
+                  padding: '5px 12px',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signup');
+                  setAuthMessage(null);
+                  setAuthModalOpen(true);
+                }}
+                style={{
+                  background: 'var(--accent)',
+                  border: '1px solid var(--accent)',
+                  color: 'var(--accent-ink)',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  padding: '5px 14px',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                Sign Up
+              </button>
+            </>
+          )}
+        </div>
       </div>
       <h1>Say the hard thing, well.</h1>
       <p className="sub">
@@ -493,6 +562,44 @@ export default function App() {
                 <button type="button" onClick={handleUnlock}>
                   Unlock all 3 tones ({price})
                 </button>
+                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '10px', fontSize: '0.84rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signup');
+                      setAuthMessage(null);
+                      setAuthModalOpen(true);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Sign Up for Free
+                  </button>
+                  <span style={{ color: 'var(--mute)' }}>·</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode('signin');
+                      setAuthMessage(null);
+                      setAuthModalOpen(true);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--mute)',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Already paid? Sign In / Restore
+                  </button>
+                </div>
               </div>
             )}
           </>
@@ -614,9 +721,9 @@ export default function App() {
             <span style={{ textDecoration: 'line-through', opacity: 0.85 }}>Monthly subscriptions or recurring fees</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.92rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
-            <span style={{ color: 'var(--mute)', fontSize: '1rem', lineHeight: 1, opacity: 0.6 }}>✕</span>
-            <span style={{ textDecoration: 'line-through', opacity: 0.85 }}>Account creation or password required</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.94rem', color: 'var(--ink)', fontFamily: 'system-ui, sans-serif' }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '1.05rem', lineHeight: 1 }}>✓</span>
+            <span>Free account &amp; instant sync across all your devices</span>
           </div>
         </div>
 
@@ -706,6 +813,54 @@ export default function App() {
 
             <div
               style={{
+                marginTop: '10px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '0.85rem',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signup');
+                  setAuthMessage(null);
+                  setAuthModalOpen(true);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                Sign Up for Free Account
+              </button>
+              <span style={{ color: 'var(--mute)' }}>·</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setAuthMessage(null);
+                  setAuthModalOpen(true);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--mute)',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                }}
+              >
+                Already purchased? Sign In
+              </button>
+            </div>
+
+            <div
+              style={{
                 marginTop: '20px',
                 paddingTop: '16px',
                 borderTop: '1px solid var(--line)',
@@ -733,6 +888,77 @@ export default function App() {
             </div>
           </>
         )}
+      </section>
+
+      {/* Chrome Extension Download Card */}
+      <section
+        style={{
+          marginTop: '36px',
+          background: 'var(--card)',
+          border: '1px solid var(--line)',
+          borderRadius: '16px',
+          padding: '24px 22px',
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.03)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          <img
+            src="/assets/aistudio/icon32_16886ae8.png"
+            alt="WellSaid Extension"
+            width="28"
+            height="28"
+            style={{ borderRadius: '6px' }}
+          />
+          <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '1.25rem', color: 'var(--ink)' }}>
+            WellSaid Chrome Extension
+          </h3>
+        </div>
+        <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: 'var(--mute)', lineHeight: 1.5 }}>
+          Rewrite tough messages directly inside Gmail, Slack, LinkedIn, Twitter, or any web text field.
+        </p>
+
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px' }}>
+          <a
+            href="/wellsaid-extension.zip"
+            download="wellsaid-extension.zip"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '10px 18px',
+              borderRadius: '8px',
+              background: 'var(--accent)',
+              color: 'var(--accent-ink)',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              textDecoration: 'none',
+              boxShadow: '0 2px 8px rgba(194,65,12,0.2)',
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Download Updated wellsaid-extension.zip</span>
+          </a>
+          <span style={{ fontSize: '0.8rem', color: 'var(--mute)' }}>
+            Manifest V3 · Instant install
+          </span>
+        </div>
+
+        <details style={{ fontSize: '0.82rem', color: 'var(--mute)', lineHeight: 1.6 }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--ink)' }}>
+            How to install in Chrome in 30 seconds
+          </summary>
+          <ol style={{ paddingLeft: '20px', margin: '8px 0 0' }}>
+            <li>Download and unzip <strong>wellsaid-extension.zip</strong>.</li>
+            <li>In Chrome, open <code style={{ background: 'var(--bg)', padding: '2px 6px', borderRadius: '4px' }}>chrome://extensions</code>.</li>
+            <li>Enable <strong>Developer mode</strong> in the top-right corner.</li>
+            <li>Click <strong>Load unpacked</strong> and select the unzipped <code>extension</code> folder.</li>
+            <li>Click the puzzle icon to pin WellSaid. Sign Up or Sign In to sync your license!</li>
+          </ol>
+        </details>
       </section>
 
       {/* Authentication & Account Modal */}
@@ -766,7 +992,7 @@ export default function App() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '1.25rem', color: 'var(--ink)' }}>
-                {unlocked ? 'WellSaid Account' : 'Sign In / Activate'}
+                {unlocked ? 'WellSaid Account' : authMode === 'signup' ? 'Create Account' : 'Sign In'}
               </h3>
               <button
                 type="button"
@@ -830,77 +1056,195 @@ export default function App() {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSignIn}>
-                <p style={{ fontSize: '0.86rem', color: 'var(--mute)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                  Enter the email you used at checkout (or your license code) to restore your lifetime access:
-                </p>
-                <input
-                  type="email"
-                  value={authInput}
-                  onChange={(e) => setAuthInput(e.target.value)}
-                  placeholder="name@example.com"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--card)',
-                    color: 'var(--ink)',
-                    fontSize: '0.9rem',
-                    marginBottom: '12px',
-                    boxSizing: 'border-box',
-                  }}
-                />
-                <button
-                  type="submit"
-                  style={{
-                    width: '100%',
-                    padding: '11px',
-                    borderRadius: '8px',
-                    background: 'var(--accent)',
-                    color: 'var(--accent-ink)',
-                    fontWeight: 600,
-                    fontSize: '0.92rem',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Activate License
-                </button>
-                {authMessage && (
-                  <div
+              <div>
+                {/* Tabs for Sign Up vs Sign In */}
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', background: 'var(--bg)', padding: '4px', borderRadius: '10px', border: '1px solid var(--line)' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('signup'); setAuthMessage(null); }}
                     style={{
-                      marginTop: '10px',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      fontSize: '0.82rem',
-                      background: authMessage.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                      color: authMessage.success ? '#10b981' : '#ef4444',
-                      border: `1px solid ${authMessage.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                      flex: 1,
+                      padding: '7px 0',
+                      borderRadius: '7px',
+                      border: 'none',
+                      background: authMode === 'signup' ? 'var(--card)' : 'transparent',
+                      color: authMode === 'signup' ? 'var(--ink)' : 'var(--mute)',
+                      fontWeight: authMode === 'signup' ? 700 : 500,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: authMode === 'signup' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    {authMessage.text}
-                  </div>
-                )}
-                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
-                  <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Don't have a license?</span><br />
-                  <a
-                    href="https://dodo.pe/wellsaid"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    Sign Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAuthMode('signin'); setAuthMessage(null); }}
                     style={{
-                      color: 'var(--accent)',
-                      fontWeight: 600,
-                      fontSize: '0.88rem',
-                      textDecoration: 'none',
-                      display: 'inline-block',
-                      marginTop: '4px',
+                      flex: 1,
+                      padding: '7px 0',
+                      borderRadius: '7px',
+                      border: 'none',
+                      background: authMode === 'signin' ? 'var(--card)' : 'transparent',
+                      color: authMode === 'signin' ? 'var(--ink)' : 'var(--mute)',
+                      fontWeight: authMode === 'signin' ? 700 : 500,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      boxShadow: authMode === 'signin' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                      transition: 'all 0.15s ease',
                     }}
                   >
-                    Get Lifetime Access ($2.99) →
-                  </a>
+                    Sign In
+                  </button>
                 </div>
-              </form>
+
+                {authMode === 'signup' ? (
+                  <form onSubmit={handleSignUp}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--mute)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      Create your free WellSaid account to save message drafts and access the browser extension:
+                    </p>
+                    <input
+                      type="email"
+                      value={authInput}
+                      onChange={(e) => setAuthInput(e.target.value)}
+                      placeholder="name@example.com"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--card)',
+                        color: 'var(--ink)',
+                        fontSize: '0.9rem',
+                        marginBottom: '12px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        borderRadius: '8px',
+                        background: 'var(--accent)',
+                        color: 'var(--accent-ink)',
+                        fontWeight: 600,
+                        fontSize: '0.92rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Create Free Account
+                    </button>
+                    {authMessage && (
+                      <div
+                        style={{
+                          marginTop: '10px',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.82rem',
+                          background: authMessage.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                          color: authMessage.success ? '#10b981' : '#ef4444',
+                          border: `1px solid ${authMessage.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                        }}
+                      >
+                        {authMessage.text}
+                      </div>
+                    )}
+                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Want all 3 tones immediately?</span><br />
+                      <a
+                        href="https://dodo.pe/wellsaid"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: 'var(--accent)',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                          textDecoration: 'none',
+                          display: 'inline-block',
+                          marginTop: '4px',
+                        }}
+                      >
+                        Unlock Lifetime Pro ($2.99) →
+                      </a>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleSignIn}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--mute)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                      Enter your account email (or checkout email / license code) to sign in:
+                    </p>
+                    <input
+                      type="text"
+                      value={authInput}
+                      onChange={(e) => setAuthInput(e.target.value)}
+                      placeholder="name@example.com or WS-PRO-..."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--card)',
+                        color: 'var(--ink)',
+                        fontSize: '0.9rem',
+                        marginBottom: '12px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        width: '100%',
+                        padding: '11px',
+                        borderRadius: '8px',
+                        background: 'var(--accent)',
+                        color: 'var(--accent-ink)',
+                        fontWeight: 600,
+                        fontSize: '0.92rem',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Sign In &amp; Restore
+                    </button>
+                    {authMessage && (
+                      <div
+                        style={{
+                          marginTop: '10px',
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          fontSize: '0.82rem',
+                          background: authMessage.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                          color: authMessage.success ? '#10b981' : '#ef4444',
+                          border: `1px solid ${authMessage.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                        }}
+                      >
+                        {authMessage.text}
+                      </div>
+                    )}
+                    <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Don't have a license?</span><br />
+                      <a
+                        href="https://dodo.pe/wellsaid"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: 'var(--accent)',
+                          fontWeight: 600,
+                          fontSize: '0.88rem',
+                          textDecoration: 'none',
+                          display: 'inline-block',
+                          marginTop: '4px',
+                        }}
+                      >
+                        Get Lifetime Access ($2.99) →
+                      </a>
+                    </div>
+                  </form>
+                )}
+              </div>
             )}
           </div>
         </div>
