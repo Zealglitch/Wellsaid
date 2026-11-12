@@ -81,7 +81,7 @@ export default function App() {
     }
   };
 
-  const price = '$9';
+  const price = '$2.99';
 
   const handleRewrite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -455,7 +455,7 @@ export default function App() {
               fontFamily: 'Georgia, serif',
             }}
           >
-            $29
+            $9
           </span>
           <span
             style={{
@@ -467,7 +467,7 @@ export default function App() {
               fontFamily: 'Georgia, serif',
             }}
           >
-            $9
+            $2.99
           </span>
           <span
             style={{
