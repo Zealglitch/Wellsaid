@@ -685,6 +685,8 @@ export default function App() {
           <span style={{ opacity: 0.5 }}>·</span>
           <a href="terms.html" style={{ color: 'var(--mute)' }}>Terms</a>
           <span style={{ opacity: 0.5 }}>·</span>
+          <a href="moderation.html" style={{ color: 'var(--mute)' }}>Safety &amp; Moderation</a>
+          <span style={{ opacity: 0.5 }}>·</span>
           <a href="refund.html" style={{ color: 'var(--mute)' }}>Refunds</a>
           <span style={{ opacity: 0.5 }}>·</span>
           <a href="mailto:heyy.wellsaid@gmail.com" style={{ color: 'var(--mute)' }}>Contact</a>
