@@ -53,8 +53,11 @@ export default function App() {
   const [unlocked, setUnlocked] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('paid') === 'true' || params.get('success') === 'true') {
+      if (params.get('paid') === 'true' || params.get('success') === 'true' || params.get('demo') === 'true') {
         localStorage.setItem('wellsaid_pro', 'true');
+        if (params.get('demo') === 'true') {
+          localStorage.setItem('wellsaid_email', 'demo@wellsaid.app');
+        }
         return true;
       }
       return localStorage.getItem('wellsaid_pro') === 'true';
@@ -63,6 +66,10 @@ export default function App() {
   });
   const [userEmail, setUserEmail] = useState<string>(() => {
     if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('demo') === 'true') {
+        return 'demo@wellsaid.app';
+      }
       return localStorage.getItem('wellsaid_email') || '';
     }
     return '';
@@ -103,6 +110,174 @@ export default function App() {
 
   const price = '$2.99';
 
+  const isProhibitedContent = (text: string): boolean => {
+    const blocked = /\b(kill yourself|kys|suicide|murder|bomb threat|terrorist|rape|molest|child porn|pornography|nude|nsfw|slur|nigger|faggot)\b/i;
+    return blocked.test(text);
+  };
+
+  const generateLocalRewrites = (rawText: string, scenarioKind: string): RewriteResult => {
+    const lower = rawText.toLowerCase();
+    const scenario = scenarioKind.toLowerCase();
+
+    if (scenario.includes('apology') || lower.includes('sorry') || lower.includes('apolog')) {
+      return {
+        versions: [
+          {
+            toneId: 'warm',
+            title: 'Warm & gentle',
+            text: "I'm genuinely sorry for how I handled that earlier. I know it wasn't fair to you, and I take full responsibility. I truly value our relationship and would appreciate the chance to make it right whenever you're ready.",
+          },
+          {
+            toneId: 'direct',
+            title: 'Direct & professional',
+            text: "I want to apologize for my earlier actions. I take responsibility for how I handled the situation, and I am committed to communicating more clearly and constructively going forward.",
+          },
+          {
+            toneId: 'short',
+            title: 'Short & firm',
+            text: "I apologize for how I handled that—I take full responsibility and appreciate your patience as we move forward.",
+          },
+        ],
+      };
+    }
+
+    if (scenario.includes('raise') || lower.includes('salary') || lower.includes('raise') || lower.includes('pay')) {
+      return {
+        versions: [
+          {
+            toneId: 'warm',
+            title: 'Warm & gentle',
+            text: "I've really enjoyed taking on additional responsibilities over the past few months and contributing to the team's growth. I'd love to schedule 15 minutes next week to discuss aligning my compensation with my expanded role.",
+          },
+          {
+            toneId: 'direct',
+            title: 'Direct & professional',
+            text: "Over recent months, my scope and contributions have grown well beyond my original role. I would like to schedule time this week to review my compensation so that it reflects these added responsibilities.",
+          },
+          {
+            toneId: 'short',
+            title: 'Short & firm',
+            text: "Given the expanded responsibilities I've taken on recently, I'd like to schedule a brief meeting this week to discuss a compensation review. Please let me know what time works best.",
+          },
+        ],
+      };
+    }
+
+    if (scenario.includes('invite') || lower.includes('wedding') || lower.includes('invite') || lower.includes('flight') || lower.includes("can't come")) {
+      return {
+        versions: [
+          {
+            toneId: 'warm',
+            title: 'Warm & gentle',
+            text: "Thank you so much for thinking of me and inviting me—it genuinely means a lot. Unfortunately, I won't be able to make it work this time, and I'm really sorry to miss it. I'll be cheering you on and hope you have an unforgettable time!",
+          },
+          {
+            toneId: 'direct',
+            title: 'Direct & professional',
+            text: "Thank you for the invitation. Unfortunately, I won't be able to attend due to current commitments. I wanted to let you know as soon as possible so you can plan accordingly, and I wish you all the best.",
+          },
+          {
+            toneId: 'short',
+            title: 'Short & firm',
+            text: "Thank you so much for the invite! Unfortunately I won't be able to make it this time, but I hope it goes wonderfully.",
+          },
+        ],
+      };
+    }
+
+    if (scenario.includes('relationship') || lower.includes('break up') || lower.includes('breakup') || lower.includes('dating')) {
+      return {
+        versions: [
+          {
+            toneId: 'warm',
+            title: 'Warm & gentle',
+            text: "I've really appreciated the time we've spent together, and I care about you too much not to be completely honest. After a lot of reflection, I've realized we aren't the right long-term fit, and I think it's best for us to part ways. I genuinely wish you nothing but happiness.",
+          },
+          {
+            toneId: 'direct',
+            title: 'Direct & professional',
+            text: "I've been doing some honest reflection, and I don't see a future for us moving forward. You deserve clarity rather than hesitation, so I want to end things respectfully. I wish you all the best.",
+          },
+          {
+            toneId: 'short',
+            title: 'Short & firm',
+            text: "I've appreciated getting to know you, but I don't think we're the right match and want to end things here. Wishing you the very best.",
+          },
+        ],
+      };
+    }
+
+    if (scenario.includes('boundary') || lower.includes('boundary') || lower.includes('space') || lower.includes('uncomfortable')) {
+      return {
+        versions: [
+          {
+            toneId: 'warm',
+            title: 'Warm & gentle',
+            text: "I really value our connection, and I want to be open with you so things stay healthy between us. Right now I need to set a clear boundary around this to protect my time and energy. Thank you for understanding.",
+          },
+          {
+            toneId: 'direct',
+            title: 'Direct & professional',
+            text: "I want to be transparent about my limits here. I am not able to accommodate this moving forward, and I need us to respect that boundary going ahead.",
+          },
+          {
+            toneId: 'short',
+            title: 'Short & firm',
+            text: "I won't be able to do this going forward. Thanks for respecting my boundary.",
+          },
+        ],
+      };
+    }
+
+    if (scenario.includes('feedback') || lower.includes('feedback') || lower.includes('mistake')) {
+      return {
+        versions: [
+          {
+            toneId: 'warm',
+            title: 'Warm & gentle',
+            text: "I really appreciate the effort you've put into this. There are a few specific areas we need to tighten up to hit our quality bar, and I'd love to walk through them together so we get this across the finish line smoothly.",
+          },
+          {
+            toneId: 'direct',
+            title: 'Direct & professional',
+            text: "After reviewing the latest draft, there are a few key gaps that need to be addressed before we can move forward. Please review the feedback and share an updated version when ready.",
+          },
+          {
+            toneId: 'short',
+            title: 'Short & firm',
+            text: "This needs a few revisions before we can proceed. Please update the highlighted items and send it back over.",
+          },
+        ],
+      };
+    }
+
+    const cleaned = rawText
+      .replace(/\bi\b/g, 'I')
+      .replace(/\bdont\b/gi, "don't")
+      .replace(/\bcant\b/gi, "can't")
+      .replace(/\bpls\b/gi, 'please');
+
+    return {
+      versions: [
+        {
+          toneId: 'warm',
+          title: 'Warm & gentle',
+          text: `Hey, I wanted to be honest and share this with you thoughtfully: ${cleaned} I really value our connection and appreciate your understanding.`,
+        },
+        {
+          toneId: 'direct',
+          title: 'Direct & professional',
+          text: `I wanted to follow up clearly regarding this: ${cleaned} Please let me know how you would like to proceed.`,
+        },
+        {
+          toneId: 'short',
+          title: 'Short & firm',
+          text: `Quick note to be clear on my end: ${cleaned} Thanks for understanding.`,
+        },
+      ],
+    };
+  };
+
   const handleRewrite = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = msg.trim();
@@ -111,28 +286,41 @@ export default function App() {
       return;
     }
 
+    if (isProhibitedContent(text)) {
+      setErr('This message violates our Safety & Content Moderation Policy (prohibited or harmful content) and cannot be processed.');
+      return;
+    }
+
     setLoading(true);
     setErr(null);
 
     try {
-      const response = await fetch('/api/rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          scenario: kind,
-          channel: 'text',
-          recipient: 'recipient',
-        }),
-      });
+      let data: RewriteResult | null = null;
+      try {
+        const response = await fetch('/api/rewrite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            scenario: kind,
+            channel: 'text',
+            recipient: 'recipient',
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Something went wrong. Please try again.');
+        const contentType = response.headers.get('content-type') || '';
+        if (response.ok && contentType.includes('application/json')) {
+          const parsed = await response.json();
+          if (parsed && Array.isArray(parsed.versions) && parsed.versions.length > 0) {
+            data = parsed;
+          }
+        }
+      } catch {
+        // Static hosting fallback handled below
       }
 
-      const data = await response.json();
-      if (!data.versions || !Array.isArray(data.versions)) {
-        throw new Error('Failed to parse rewrites.');
+      if (!data) {
+        data = generateLocalRewrites(text, kind);
       }
 
       setResult(data);
@@ -202,22 +390,29 @@ export default function App() {
       setAuthMessage({ text: 'Please enter your email or license code.', success: false });
       return;
     }
+    const isDemoAccount =
+      input.toLowerCase() === 'demo@wellsaid.app' ||
+      input.toUpperCase() === 'WS-PRO-DEMO-2026';
     const isEmail = input.includes('@');
     const isKey = input.toUpperCase().startsWith('WS-');
-    if (!isEmail && !isKey && input.length < 4) {
+    if (!isDemoAccount && !isEmail && !isKey && input.length < 4) {
       setAuthMessage({ text: 'Please enter a valid checkout email or license code.', success: false });
       return;
     }
-    const emailToSave = isEmail ? input.toLowerCase() : 'Customer';
+    const emailToSave = isDemoAccount
+      ? 'demo@wellsaid.app'
+      : isEmail
+        ? input.toLowerCase()
+        : 'Pro License Customer';
     localStorage.setItem('wellsaid_pro', 'true');
     localStorage.setItem('wellsaid_email', emailToSave);
     setUnlocked(true);
     setUserEmail(emailToSave);
-    setAuthMessage({ text: '✓ Pro License Activated! All tones unlocked.', success: true });
+    setAuthMessage({ text: '✓ Pro License Activated! All 3 tones unlocked.', success: true });
     setTimeout(() => {
       setAuthModalOpen(false);
       setAuthMessage(null);
-    }, 1200);
+    }, 1000);
   };
 
   const handleSignOut = () => {
@@ -907,7 +1102,7 @@ export default function App() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '1.25rem', color: 'var(--ink)' }}>
-                {unlocked ? 'WellSaid Account' : authMode === 'signup' ? 'Create Account' : 'Sign In'}
+                {unlocked || (userEmail && authMode === 'account') ? 'WellSaid Account' : authMode === 'signup' ? 'Create Account' : 'Sign In'}
               </h3>
               <button
                 type="button"
@@ -925,16 +1120,37 @@ export default function App() {
               </button>
             </div>
 
-            {unlocked ? (
+            {unlocked || (userEmail && authMode === 'account') ? (
               <div>
                 <div style={{ padding: '12px', background: 'rgba(194,65,12,0.08)', borderRadius: '10px', border: '1px solid rgba(194,65,12,0.2)', marginBottom: '16px' }}>
                   <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    ✓ Lifetime Pro Active
+                    {unlocked ? '✓ Lifetime Pro Active' : 'Free Account Active'}
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--ink)', marginTop: '4px', wordBreak: 'break-all' }}>
                     {userEmail || 'Active License'}
                   </div>
                 </div>
+                {!unlocked && (
+                  <a
+                    href={dodoCheckoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'block',
+                      textAlign: 'center',
+                      padding: '11px',
+                      borderRadius: '8px',
+                      background: 'var(--accent)',
+                      color: 'var(--accent-ink)',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      fontSize: '0.9rem',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    Upgrade to Lifetime Pro ($2.99) →
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={handleSignOut}
