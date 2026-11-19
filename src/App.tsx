@@ -3,16 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase, isSupabaseConfigured, fetchUserProfile } from './lib/supabase';
 
 interface RewriteVersion {
   toneId: string;
   title: string;
   text: string;
+  locked?: boolean;
 }
 
 interface RewriteResult {
   versions: RewriteVersion[];
+  isPro?: boolean;
 }
 
 export default function App() {
@@ -50,36 +54,54 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<RewriteResult | null>(null);
-  const [unlocked, setUnlocked] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('paid') === 'true' || params.get('success') === 'true' || params.get('demo') === 'true') {
-        localStorage.setItem('wellsaid_pro', 'true');
-        if (params.get('demo') === 'true') {
-          localStorage.setItem('wellsaid_email', 'demo@wellsaid.app');
-        }
-        return true;
-      }
-      return localStorage.getItem('wellsaid_pro') === 'true';
-    }
-    return false;
-  });
-  const [userEmail, setUserEmail] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('demo') === 'true') {
-        return 'demo@wellsaid.app';
-      }
-      return localStorage.getItem('wellsaid_email') || '';
-    }
-    return '';
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [unlocked, setUnlocked] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'account'>('signup');
-  const [authInput, setAuthInput] = useState('');
+  const [authEmailInput, setAuthEmailInput] = useState('');
+  const [authPasswordInput, setAuthPasswordInput] = useState('');
+  const [licenseInput, setLicenseInput] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
   const [authMessage, setAuthMessage] = useState<{ text: string; success: boolean } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  const syncUserEntitlement = async (activeSession: Session | null) => {
+    setSession(activeSession);
+    if (!activeSession?.user) {
+      setUnlocked(false);
+      setUserEmail('');
+      return false;
+    }
+    setUserEmail(activeSession.user.email || '');
+    const profile = await fetchUserProfile(activeSession.user.id);
+    const isPro = Boolean(profile?.is_pro);
+    setUnlocked(isPro);
+    return isPro;
+  };
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) {
+        syncUserEntitlement(data.session || null);
+      }
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (mounted) {
+        syncUserEntitlement(nextSession || null);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSelectAndApply = async (text: string, index: number, toneTitle: string) => {
     // 1. Automatically replace draft in the message textarea
@@ -115,167 +137,38 @@ export default function App() {
     return blocked.test(text);
   };
 
-  const generateLocalRewrites = (rawText: string, scenarioKind: string): RewriteResult => {
-    const lower = rawText.toLowerCase();
-    const scenario = scenarioKind.toLowerCase();
-
-    if (scenario.includes('apology') || lower.includes('sorry') || lower.includes('apolog')) {
-      return {
-        versions: [
-          {
-            toneId: 'warm',
-            title: 'Warm & gentle',
-            text: "I'm genuinely sorry for how I handled that earlier. I know it wasn't fair to you, and I take full responsibility. I truly value our relationship and would appreciate the chance to make it right whenever you're ready.",
-          },
-          {
-            toneId: 'direct',
-            title: 'Direct & professional',
-            text: "I want to apologize for my earlier actions. I take responsibility for how I handled the situation, and I am committed to communicating more clearly and constructively going forward.",
-          },
-          {
-            toneId: 'short',
-            title: 'Short & firm',
-            text: "I apologize for how I handled that—I take full responsibility and appreciate your patience as we move forward.",
-          },
-        ],
-      };
+  const fetchRewrites = async (text: string, scenarioKind: string, accessToken?: string) => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    if (scenario.includes('raise') || lower.includes('salary') || lower.includes('raise') || lower.includes('pay')) {
-      return {
-        versions: [
-          {
-            toneId: 'warm',
-            title: 'Warm & gentle',
-            text: "I've really enjoyed taking on additional responsibilities over the past few months and contributing to the team's growth. I'd love to schedule 15 minutes next week to discuss aligning my compensation with my expanded role.",
-          },
-          {
-            toneId: 'direct',
-            title: 'Direct & professional',
-            text: "Over recent months, my scope and contributions have grown well beyond my original role. I would like to schedule time this week to review my compensation so that it reflects these added responsibilities.",
-          },
-          {
-            toneId: 'short',
-            title: 'Short & firm',
-            text: "Given the expanded responsibilities I've taken on recently, I'd like to schedule a brief meeting this week to discuss a compensation review. Please let me know what time works best.",
-          },
-        ],
-      };
+    const response = await fetch('/api/rewrite', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        message: text,
+        scenario: scenarioKind,
+        channel: 'text',
+        recipient: 'recipient',
+      }),
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Rewrite service is currently unavailable. Please try again shortly.');
     }
 
-    if (scenario.includes('invite') || lower.includes('wedding') || lower.includes('invite') || lower.includes('flight') || lower.includes("can't come")) {
-      return {
-        versions: [
-          {
-            toneId: 'warm',
-            title: 'Warm & gentle',
-            text: "Thank you so much for thinking of me and inviting me—it genuinely means a lot. Unfortunately, I won't be able to make it work this time, and I'm really sorry to miss it. I'll be cheering you on and hope you have an unforgettable time!",
-          },
-          {
-            toneId: 'direct',
-            title: 'Direct & professional',
-            text: "Thank you for the invitation. Unfortunately, I won't be able to attend due to current commitments. I wanted to let you know as soon as possible so you can plan accordingly, and I wish you all the best.",
-          },
-          {
-            toneId: 'short',
-            title: 'Short & firm',
-            text: "Thank you so much for the invite! Unfortunately I won't be able to make it this time, but I hope it goes wonderfully.",
-          },
-        ],
-      };
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || 'Something went wrong. Please try again.');
     }
 
-    if (scenario.includes('relationship') || lower.includes('break up') || lower.includes('breakup') || lower.includes('dating')) {
-      return {
-        versions: [
-          {
-            toneId: 'warm',
-            title: 'Warm & gentle',
-            text: "I've really appreciated the time we've spent together, and I care about you too much not to be completely honest. After a lot of reflection, I've realized we aren't the right long-term fit, and I think it's best for us to part ways. I genuinely wish you nothing but happiness.",
-          },
-          {
-            toneId: 'direct',
-            title: 'Direct & professional',
-            text: "I've been doing some honest reflection, and I don't see a future for us moving forward. You deserve clarity rather than hesitation, so I want to end things respectfully. I wish you all the best.",
-          },
-          {
-            toneId: 'short',
-            title: 'Short & firm',
-            text: "I've appreciated getting to know you, but I don't think we're the right match and want to end things here. Wishing you the very best.",
-          },
-        ],
-      };
+    if (!data.versions || !Array.isArray(data.versions)) {
+      throw new Error('Failed to parse rewrites.');
     }
 
-    if (scenario.includes('boundary') || lower.includes('boundary') || lower.includes('space') || lower.includes('uncomfortable')) {
-      return {
-        versions: [
-          {
-            toneId: 'warm',
-            title: 'Warm & gentle',
-            text: "I really value our connection, and I want to be open with you so things stay healthy between us. Right now I need to set a clear boundary around this to protect my time and energy. Thank you for understanding.",
-          },
-          {
-            toneId: 'direct',
-            title: 'Direct & professional',
-            text: "I want to be transparent about my limits here. I am not able to accommodate this moving forward, and I need us to respect that boundary going ahead.",
-          },
-          {
-            toneId: 'short',
-            title: 'Short & firm',
-            text: "I won't be able to do this going forward. Thanks for respecting my boundary.",
-          },
-        ],
-      };
-    }
-
-    if (scenario.includes('feedback') || lower.includes('feedback') || lower.includes('mistake')) {
-      return {
-        versions: [
-          {
-            toneId: 'warm',
-            title: 'Warm & gentle',
-            text: "I really appreciate the effort you've put into this. There are a few specific areas we need to tighten up to hit our quality bar, and I'd love to walk through them together so we get this across the finish line smoothly.",
-          },
-          {
-            toneId: 'direct',
-            title: 'Direct & professional',
-            text: "After reviewing the latest draft, there are a few key gaps that need to be addressed before we can move forward. Please review the feedback and share an updated version when ready.",
-          },
-          {
-            toneId: 'short',
-            title: 'Short & firm',
-            text: "This needs a few revisions before we can proceed. Please update the highlighted items and send it back over.",
-          },
-        ],
-      };
-    }
-
-    const cleaned = rawText
-      .replace(/\bi\b/g, 'I')
-      .replace(/\bdont\b/gi, "don't")
-      .replace(/\bcant\b/gi, "can't")
-      .replace(/\bpls\b/gi, 'please');
-
-    return {
-      versions: [
-        {
-          toneId: 'warm',
-          title: 'Warm & gentle',
-          text: `Hey, I wanted to be honest and share this with you thoughtfully: ${cleaned} I really value our connection and appreciate your understanding.`,
-        },
-        {
-          toneId: 'direct',
-          title: 'Direct & professional',
-          text: `I wanted to follow up clearly regarding this: ${cleaned} Please let me know how you would like to proceed.`,
-        },
-        {
-          toneId: 'short',
-          title: 'Short & firm',
-          text: `Quick note to be clear on my end: ${cleaned} Thanks for understanding.`,
-        },
-      ],
-    };
+    return data as RewriteResult;
   };
 
   const handleRewrite = async (e: React.FormEvent) => {
@@ -295,34 +188,16 @@ export default function App() {
     setErr(null);
 
     try {
-      let data: RewriteResult | null = null;
-      try {
-        const response = await fetch('/api/rewrite', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            scenario: kind,
-            channel: 'text',
-            recipient: 'recipient',
-          }),
-        });
-
-        const contentType = response.headers.get('content-type') || '';
-        if (response.ok && contentType.includes('application/json')) {
-          const parsed = await response.json();
-          if (parsed && Array.isArray(parsed.versions) && parsed.versions.length > 0) {
-            data = parsed;
-          }
-        }
-      } catch {
-        // Static hosting fallback handled below
+      let token = session?.access_token;
+      if (supabase) {
+        const { data: sData } = await supabase.auth.getSession();
+        token = sData.session?.access_token;
       }
 
-      if (!data) {
-        data = generateLocalRewrites(text, kind);
+      const data = await fetchRewrites(text, kind, token);
+      if (typeof data.isPro === 'boolean') {
+        setUnlocked(data.isPro);
       }
-
       setResult(data);
 
       // Smooth scroll to output
@@ -366,61 +241,203 @@ export default function App() {
     return title || 'Rewritten version';
   };
 
-  const handleSignUp = (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const input = authInput.trim();
-    if (!input || !input.includes('@')) {
+    if (!supabase || !isSupabaseConfigured) {
+      setAuthMessage({
+        text: 'Authentication is not configured yet. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+        success: false,
+      });
+      return;
+    }
+
+    const email = authEmailInput.trim().toLowerCase();
+    const password = authPasswordInput;
+
+    if (!email || !email.includes('@')) {
       setAuthMessage({ text: 'Please enter a valid email address.', success: false });
       return;
     }
-    const emailToSave = input.toLowerCase();
-    localStorage.setItem('wellsaid_email', emailToSave);
-    setUserEmail(emailToSave);
-    setAuthMessage({ text: '✓ Account created successfully! Welcome to WellSaid.', success: true });
-    setTimeout(() => {
-      setAuthModalOpen(false);
-      setAuthMessage(null);
-    }, 1200);
+    if (password.length < 6) {
+      setAuthMessage({ text: 'Password must be at least 6 characters.', success: false });
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthMessage(null);
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setAuthMessage({ text: error.message, success: false });
+        return;
+      }
+
+      if (data.session) {
+        const isPro = await syncUserEntitlement(data.session);
+        setAuthPasswordInput('');
+        setAuthMessage({
+          text: isPro
+            ? '✓ Account created & Lifetime Pro detected from your purchase!'
+            : '✓ Free account created! Welcome to WellSaid.',
+          success: true,
+        });
+        if (isPro && msg.trim() && result) {
+          fetchRewrites(msg.trim(), kind, data.session.access_token)
+            .then((refreshed) => setResult(refreshed))
+            .catch(() => {});
+        }
+        setTimeout(() => {
+          setAuthModalOpen(false);
+          setAuthMessage(null);
+        }, 1200);
+      } else {
+        setAuthPasswordInput('');
+        setAuthMessage({
+          text: '✓ Account created! Please check your email inbox to confirm your address, then sign in.',
+          success: true,
+        });
+      }
+    } finally {
+      setAuthBusy(false);
+    }
   };
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    const input = authInput.trim();
-    if (!input) {
-      setAuthMessage({ text: 'Please enter your email or license code.', success: false });
+    if (!supabase || !isSupabaseConfigured) {
+      setAuthMessage({
+        text: 'Authentication is not configured yet. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+        success: false,
+      });
       return;
     }
-    const isDemoAccount =
-      input.toLowerCase() === 'demo@wellsaid.app' ||
-      input.toUpperCase() === 'WS-PRO-DEMO-2026';
-    const isEmail = input.includes('@');
-    const isKey = input.toUpperCase().startsWith('WS-');
-    if (!isDemoAccount && !isEmail && !isKey && input.length < 4) {
-      setAuthMessage({ text: 'Please enter a valid checkout email or license code.', success: false });
+
+    const email = authEmailInput.trim().toLowerCase();
+    const password = authPasswordInput;
+
+    if (!email || !email.includes('@')) {
+      setAuthMessage({ text: 'Please enter your account email address.', success: false });
       return;
     }
-    const emailToSave = isDemoAccount
-      ? 'demo@wellsaid.app'
-      : isEmail
-        ? input.toLowerCase()
-        : 'Pro License Customer';
-    localStorage.setItem('wellsaid_pro', 'true');
-    localStorage.setItem('wellsaid_email', emailToSave);
-    setUnlocked(true);
-    setUserEmail(emailToSave);
-    setAuthMessage({ text: '✓ Pro License Activated! All 3 tones unlocked.', success: true });
-    setTimeout(() => {
-      setAuthModalOpen(false);
-      setAuthMessage(null);
-    }, 1000);
+    if (!password) {
+      setAuthMessage({ text: 'Please enter your password.', success: false });
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthMessage(null);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setAuthMessage({ text: error.message, success: false });
+        return;
+      }
+
+      const isPro = await syncUserEntitlement(data.session || null);
+      setAuthPasswordInput('');
+      setAuthMessage({
+        text: isPro
+          ? '✓ Signed in! Lifetime Pro active — all 3 tones unlocked.'
+          : '✓ Signed in to your Free account.',
+        success: true,
+      });
+
+      if (isPro && msg.trim() && result && data.session?.access_token) {
+        fetchRewrites(msg.trim(), kind, data.session.access_token)
+          .then((refreshed) => setResult(refreshed))
+          .catch(() => {});
+      }
+
+      setTimeout(() => {
+        if (isPro) {
+          setAuthModalOpen(false);
+          setAuthMessage(null);
+        } else {
+          setAuthMode('account');
+          setAuthMessage(null);
+        }
+      }, 900);
+    } finally {
+      setAuthBusy(false);
+    }
   };
 
-  const handleSignOut = () => {
-    localStorage.removeItem('wellsaid_pro');
-    localStorage.removeItem('wellsaid_email');
+  const handleActivateLicense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const key = licenseInput.trim();
+    if (!key) {
+      setAuthMessage({ text: 'Please enter your license key from your Dodo Payments receipt.', success: false });
+      return;
+    }
+    if (!supabase || !session?.access_token) {
+      setAuthMessage({ text: 'Please sign in first to activate a license key.', success: false });
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthMessage(null);
+    try {
+      const res = await fetch('/api/activate-license', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ licenseKey: key }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      const payload = contentType.includes('application/json') ? await res.json() : null;
+
+      if (res.ok && payload?.success) {
+        await syncUserEntitlement(session);
+        setLicenseInput('');
+        setAuthMessage({ text: '✓ Lifetime Pro activated! All 3 tones unlocked.', success: true });
+        if (msg.trim() && result) {
+          fetchRewrites(msg.trim(), kind, session.access_token)
+            .then((refreshed) => setResult(refreshed))
+            .catch(() => {});
+        }
+        return;
+      }
+
+      // Fallback for internal Supabase license keys via hardened SECURITY DEFINER RPC
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('redeem_internal_license', {
+        p_key: key,
+      });
+      if (!rpcErr && rpcData?.valid === true) {
+        await syncUserEntitlement(session);
+        setLicenseInput('');
+        setAuthMessage({ text: '✓ Lifetime Pro activated! All 3 tones unlocked.', success: true });
+        if (msg.trim() && result) {
+          fetchRewrites(msg.trim(), kind, session.access_token)
+            .then((refreshed) => setResult(refreshed))
+            .catch(() => {});
+        }
+        return;
+      }
+
+      setAuthMessage({
+        text: payload?.error || 'Invalid, expired, or already used license key.',
+        success: false,
+      });
+    } catch {
+      setAuthMessage({ text: 'Unable to verify license key right now. Please try again.', success: false });
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setSession(null);
     setUnlocked(false);
     setUserEmail('');
+    setResult(null);
     setAuthModalOpen(false);
+    setAuthMessage(null);
   };
 
   return (
@@ -451,7 +468,7 @@ export default function App() {
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {unlocked || userEmail ? (
+          {session ? (
             <button
               type="button"
               onClick={() => {
@@ -640,112 +657,128 @@ export default function App() {
             </div>
 
             {/* 2. Direct & professional */}
-            {result.versions.length > 1 && (
-              <div
-                className={`card ${!unlocked ? 'locked' : 'card-selectable'}`}
-                onClick={() => {
-                  if (unlocked) {
-                    handleSelectAndApply(result.versions[1].text, 1, getToneTag(result.versions[1].toneId, result.versions[1].title));
-                  }
-                }}
-                title={unlocked ? 'Click to auto-replace your draft above with this tone' : undefined}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <div className="tag" style={{ margin: 0 }}>{getToneTag(result.versions[1].toneId, result.versions[1].title)}</div>
-                  {unlocked && (
-                    <button
-                      className="send-arrow-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectAndApply(result.versions[1].text, 1, getToneTag(result.versions[1].toneId, result.versions[1].title));
-                      }}
-                      title="Auto-replace draft & copy"
-                      aria-label="Auto-replace draft & copy"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                      </svg>
-                    </button>
+            {result.versions.length > 1 && (() => {
+              const v1 = result.versions[1];
+              const isLocked1 = Boolean(v1.locked || !unlocked || !v1.text);
+              return (
+                <div
+                  className={`card ${isLocked1 ? 'locked' : 'card-selectable'}`}
+                  onClick={() => {
+                    if (!isLocked1) {
+                      handleSelectAndApply(v1.text, 1, getToneTag(v1.toneId, v1.title));
+                    }
+                  }}
+                  title={!isLocked1 ? 'Click to auto-replace your draft above with this tone' : undefined}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div className="tag" style={{ margin: 0 }}>{getToneTag(v1.toneId, v1.title)}</div>
+                    {!isLocked1 && (
+                      <button
+                        className="send-arrow-btn"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAndApply(v1.text, 1, getToneTag(v1.toneId, v1.title));
+                        }}
+                        title="Auto-replace draft & copy"
+                        aria-label="Auto-replace draft & copy"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                          <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="txt">
+                    {isLocked1
+                      ? 'Unlock Lifetime Pro ($2.99) or sign in with your Pro account to generate the Direct & professional version.'
+                      : v1.text}
+                  </div>
+                  {isLocked1 ? (
+                    <div className="lock">🔒</div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+                      <button
+                        className="ghost"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAndApply(v1.text, 1, getToneTag(v1.toneId, v1.title));
+                        }}
+                      >
+                        {copiedIndex === 1 ? '✓ Auto-applied to draft!' : 'Auto-replace draft & copy'}
+                      </button>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
+                        1 tap to auto-replace
+                      </span>
+                    </div>
                   )}
                 </div>
-                <div className="txt">{result.versions[1].text}</div>
-                {!unlocked ? (
-                  <div className="lock">🔒</div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                    <button
-                      className="ghost"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectAndApply(result.versions[1].text, 1, getToneTag(result.versions[1].toneId, result.versions[1].title));
-                      }}
-                    >
-                      {copiedIndex === 1 ? '✓ Auto-applied to draft!' : 'Auto-replace draft & copy'}
-                    </button>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
-                      1 tap to auto-replace
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* 3. Short & firm */}
-            {result.versions.length > 2 && (
-              <div
-                className={`card ${!unlocked ? 'locked' : 'card-selectable'}`}
-                onClick={() => {
-                  if (unlocked) {
-                    handleSelectAndApply(result.versions[2].text, 2, getToneTag(result.versions[2].toneId, result.versions[2].title));
-                  }
-                }}
-                title={unlocked ? 'Click to auto-replace your draft above with this tone' : undefined}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <div className="tag" style={{ margin: 0 }}>{getToneTag(result.versions[2].toneId, result.versions[2].title)}</div>
-                  {unlocked && (
-                    <button
-                      className="send-arrow-btn"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectAndApply(result.versions[2].text, 2, getToneTag(result.versions[2].toneId, result.versions[2].title));
-                      }}
-                      title="Auto-replace draft & copy"
-                      aria-label="Auto-replace draft & copy"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                      </svg>
-                    </button>
+            {result.versions.length > 2 && (() => {
+              const v2 = result.versions[2];
+              const isLocked2 = Boolean(v2.locked || !unlocked || !v2.text);
+              return (
+                <div
+                  className={`card ${isLocked2 ? 'locked' : 'card-selectable'}`}
+                  onClick={() => {
+                    if (!isLocked2) {
+                      handleSelectAndApply(v2.text, 2, getToneTag(v2.toneId, v2.title));
+                    }
+                  }}
+                  title={!isLocked2 ? 'Click to auto-replace your draft above with this tone' : undefined}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div className="tag" style={{ margin: 0 }}>{getToneTag(v2.toneId, v2.title)}</div>
+                    {!isLocked2 && (
+                      <button
+                        className="send-arrow-btn"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAndApply(v2.text, 2, getToneTag(v2.toneId, v2.title));
+                        }}
+                        title="Auto-replace draft & copy"
+                        aria-label="Auto-replace draft & copy"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="5" y1="12" x2="19" y2="12"></line>
+                          <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className="txt">
+                    {isLocked2
+                      ? 'Unlock Lifetime Pro ($2.99) or sign in with your Pro account to generate the Short & firm version.'
+                      : v2.text}
+                  </div>
+                  {isLocked2 ? (
+                    <div className="lock">🔒</div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
+                      <button
+                        className="ghost"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectAndApply(v2.text, 2, getToneTag(v2.toneId, v2.title));
+                        }}
+                      >
+                        {copiedIndex === 2 ? '✓ Auto-applied to draft!' : 'Auto-replace draft & copy'}
+                      </button>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
+                        1 tap to auto-replace
+                      </span>
+                    </div>
                   )}
                 </div>
-                <div className="txt">{result.versions[2].text}</div>
-                {!unlocked ? (
-                  <div className="lock">🔒</div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '10px' }}>
-                    <button
-                      className="ghost"
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectAndApply(result.versions[2].text, 2, getToneTag(result.versions[2].toneId, result.versions[2].title));
-                      }}
-                    >
-                      {copiedIndex === 2 ? '✓ Auto-applied to draft!' : 'Auto-replace draft & copy'}
-                    </button>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--mute)', fontFamily: 'system-ui, sans-serif' }}>
-                      1 tap to auto-replace
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* Paywall unlock card if locked */}
             {!unlocked && (
@@ -806,7 +839,7 @@ export default function App() {
         <li>Paste what you want to say, however messy.</li>
         <li>Get your first rewrite free, right away.</li>
         <li>
-          Want the other two tones? Unlock them for <span className="price">{price}</span>, once. No account, no subscription.
+          Want the other two tones? Unlock them for <span className="price">{price}</span>, once. One-time payment, no subscription.
         </li>
       </ol>
 
@@ -1102,7 +1135,7 @@ export default function App() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <h3 style={{ margin: 0, fontFamily: 'Georgia, serif', fontSize: '1.25rem', color: 'var(--ink)' }}>
-                {unlocked || (userEmail && authMode === 'account') ? 'WellSaid Account' : authMode === 'signup' ? 'Create Account' : 'Sign In'}
+                {session ? 'WellSaid Account' : authMode === 'signup' ? 'Create Account' : 'Sign In'}
               </h3>
               <button
                 type="button"
@@ -1120,37 +1153,104 @@ export default function App() {
               </button>
             </div>
 
-            {unlocked || (userEmail && authMode === 'account') ? (
+            {session ? (
               <div>
                 <div style={{ padding: '12px', background: 'rgba(194,65,12,0.08)', borderRadius: '10px', border: '1px solid rgba(194,65,12,0.2)', marginBottom: '16px' }}>
                   <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    {unlocked ? '✓ Lifetime Pro Active' : 'Free Account Active'}
+                    {unlocked ? '✓ Lifetime Pro Active' : 'Free Account'}
                   </div>
                   <div style={{ fontSize: '0.88rem', color: 'var(--ink)', marginTop: '4px', wordBreak: 'break-all' }}>
-                    {userEmail || 'Active License'}
+                    {userEmail}
                   </div>
                 </div>
+
                 {!unlocked && (
-                  <a
-                    href={dodoCheckoutUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <>
+                    <a
+                      href={dodoCheckoutUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'block',
+                        textAlign: 'center',
+                        padding: '11px',
+                        borderRadius: '8px',
+                        background: 'var(--accent)',
+                        color: 'var(--accent-ink)',
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                        fontSize: '0.9rem',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      Upgrade to Lifetime Pro ($2.99) →
+                    </a>
+
+                    <form
+                      onSubmit={handleActivateLicense}
+                      style={{
+                        paddingTop: '14px',
+                        marginBottom: '14px',
+                        borderTop: '1px solid var(--line)',
+                      }}
+                    >
+                      <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '6px' }}>
+                        Already purchased? Activate License Key
+                      </div>
+                      <input
+                        type="text"
+                        value={licenseInput}
+                        onChange={(e) => setLicenseInput(e.target.value)}
+                        placeholder="Paste Dodo Payments license key"
+                        style={{
+                          width: '100%',
+                          padding: '9px 11px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--card)',
+                          color: 'var(--ink)',
+                          fontSize: '0.86rem',
+                          marginBottom: '8px',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={authBusy}
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          borderRadius: '8px',
+                          background: 'var(--bg)',
+                          border: '1px solid var(--line)',
+                          color: 'var(--ink)',
+                          fontWeight: 600,
+                          fontSize: '0.86rem',
+                          cursor: authBusy ? 'wait' : 'pointer',
+                        }}
+                      >
+                        {authBusy ? 'Verifying...' : 'Verify & Unlock Pro'}
+                      </button>
+                    </form>
+                  </>
+                )}
+
+                {authMessage && (
+                  <div
                     style={{
-                      display: 'block',
-                      textAlign: 'center',
-                      padding: '11px',
-                      borderRadius: '8px',
-                      background: 'var(--accent)',
-                      color: 'var(--accent-ink)',
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                      fontSize: '0.9rem',
-                      marginBottom: '10px',
+                      marginBottom: '12px',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      fontSize: '0.82rem',
+                      background: authMessage.success ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                      color: authMessage.success ? '#10b981' : '#ef4444',
+                      border: `1px solid ${authMessage.success ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
                     }}
                   >
-                    Upgrade to Lifetime Pro ($2.99) →
-                  </a>
+                    {authMessage.text}
+                  </div>
                 )}
+
                 <button
                   type="button"
                   onClick={handleSignOut}
@@ -1215,13 +1315,33 @@ export default function App() {
                 {authMode === 'signup' ? (
                   <form onSubmit={handleSignUp}>
                     <p style={{ fontSize: '0.85rem', color: 'var(--mute)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                      Create your free WellSaid account to save message drafts and access the browser extension:
+                      Create your WellSaid account with email &amp; password:
                     </p>
                     <input
                       type="email"
-                      value={authInput}
-                      onChange={(e) => setAuthInput(e.target.value)}
+                      required
+                      value={authEmailInput}
+                      onChange={(e) => setAuthEmailInput(e.target.value)}
                       placeholder="name@example.com"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--card)',
+                        color: 'var(--ink)',
+                        fontSize: '0.9rem',
+                        marginBottom: '10px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <input
+                      type="password"
+                      required
+                      minLength={6}
+                      value={authPasswordInput}
+                      onChange={(e) => setAuthPasswordInput(e.target.value)}
+                      placeholder="Password (min. 6 characters)"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1236,6 +1356,7 @@ export default function App() {
                     />
                     <button
                       type="submit"
+                      disabled={authBusy}
                       style={{
                         width: '100%',
                         padding: '11px',
@@ -1245,10 +1366,10 @@ export default function App() {
                         fontWeight: 600,
                         fontSize: '0.92rem',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: authBusy ? 'wait' : 'pointer',
                       }}
                     >
-                      Create Free Account
+                      {authBusy ? 'Creating account...' : 'Create Free Account'}
                     </button>
                     {authMessage && (
                       <div
@@ -1266,9 +1387,9 @@ export default function App() {
                       </div>
                     )}
                     <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Want all 3 tones immediately?</span><br />
+                      <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Want all 3 tones forever?</span><br />
                       <a
-                        href="https://dodo.pe/wellsaid"
+                        href={dodoCheckoutUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
@@ -1287,13 +1408,32 @@ export default function App() {
                 ) : (
                   <form onSubmit={handleSignIn}>
                     <p style={{ fontSize: '0.85rem', color: 'var(--mute)', margin: '0 0 12px', lineHeight: 1.5 }}>
-                      Enter your account email (or checkout email / license code) to sign in:
+                      Sign in with your verified email &amp; password:
                     </p>
                     <input
-                      type="text"
-                      value={authInput}
-                      onChange={(e) => setAuthInput(e.target.value)}
-                      placeholder="name@example.com or WS-PRO-..."
+                      type="email"
+                      required
+                      value={authEmailInput}
+                      onChange={(e) => setAuthEmailInput(e.target.value)}
+                      placeholder="name@example.com"
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--card)',
+                        color: 'var(--ink)',
+                        fontSize: '0.9rem',
+                        marginBottom: '10px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <input
+                      type="password"
+                      required
+                      value={authPasswordInput}
+                      onChange={(e) => setAuthPasswordInput(e.target.value)}
+                      placeholder="Password"
                       style={{
                         width: '100%',
                         padding: '10px 12px',
@@ -1308,6 +1448,7 @@ export default function App() {
                     />
                     <button
                       type="submit"
+                      disabled={authBusy}
                       style={{
                         width: '100%',
                         padding: '11px',
@@ -1317,10 +1458,10 @@ export default function App() {
                         fontWeight: 600,
                         fontSize: '0.92rem',
                         border: 'none',
-                        cursor: 'pointer',
+                        cursor: authBusy ? 'wait' : 'pointer',
                       }}
                     >
-                      Sign In &amp; Restore
+                      {authBusy ? 'Signing in...' : 'Sign In'}
                     </button>
                     {authMessage && (
                       <div
@@ -1338,9 +1479,9 @@ export default function App() {
                       </div>
                     )}
                     <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--line)', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Don't have a license?</span><br />
+                      <span style={{ fontSize: '0.82rem', color: 'var(--mute)' }}>Don't have Lifetime Pro yet?</span><br />
                       <a
-                        href="https://dodo.pe/wellsaid"
+                        href={dodoCheckoutUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{
